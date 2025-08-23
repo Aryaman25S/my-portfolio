@@ -4,3 +4,5 @@
 
 html, body, #root { height: 100%; }
 body { margin: 0; background: #0b0f14; }
+/* Smooth scrolling for in-page anchors */
+html { scroll-behavior: smooth; }

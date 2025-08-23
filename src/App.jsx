@@ -1,4 +1,3 @@
-// src/App.jsx
 import { useState, useRef, useEffect } from "react";
 import "./index.css";
 import "./App.css";
@@ -63,11 +62,6 @@ export default function App() {
 
   return (
     <div className="relative w-full h-screen overflow-hidden bg-[#0b0f14] text-white font-[Inter,ui-sans-serif,system-ui]">
-      {/* Google Font (Inter) */}
-      <link rel="preconnect" href="https://fonts.googleapis.com" />
-      <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
-      <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-
       {/* Top center nav */}
       {topNav}
 
@@ -91,7 +85,7 @@ export default function App() {
         </div>
       )}
 
-      {/* Timeline screen (content placeholder; real data in later commits) */}
+      {/* Timeline screen */}
       {mode === "timeline" && (
         <div ref={timelineRef} id="timeline" className="absolute inset-0 overflow-y-auto z-10">
           <div className="pointer-events-none sticky top-0 z-0">
