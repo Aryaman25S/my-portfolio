@@ -5,6 +5,7 @@ import ThreeStage from "./ThreeStage.jsx";
 import { experience, education } from "./timelineData.js";
 import { projects } from "./projectsData.js";
 import ContactForm from "./ContactForm.jsx";
+import About from "./About.jsx"; // NEW
 
 export default function App() {
   const [mode, setMode] = useState("home"); // 'home' | 'timeline'
@@ -233,10 +234,6 @@ export default function App() {
           </figure>
           <h1 className="mt-5 text-center text-6xl md:text-7xl font-black tracking-tight">Hi, I'm <span className="text-sky-400">Aryaman</span> 👋</h1>
           <p className="mt-3 max-w-[56ch] text-center text-slate-300 text-lg md:text-xl">Full‑stack engineer with a soft spot for ML + 3D. I build reliable systems and playful interfaces.</p>
-          <div className="mt-6 flex gap-3">
-            <a href="#timeline-top" onClick={(e)=>{e.preventDefault(); setMode("timeline");}} className="rounded-xl bg-sky-600 hover:bg-sky-500 px-5 py-3 font-semibold shadow">View Timeline</a>
-            <a href="#projects-section" onClick={(e)=>{e.preventDefault(); setMode("timeline"); scrollTo("projects-section");}} className="rounded-xl border border-white/20 bg-white/5 px-5 py-3 text-slate-200 hover:border-sky-500/40">Projects</a>
-          </div>
         </section>
 
         {/* TIMELINE - slides from bottom */}
@@ -260,9 +257,12 @@ export default function App() {
             </div>
 
             {/* About */}
-            <section id="about-section" className="mt-10 backdrop-blur-md bg-white/[0.04] border border-white/10 shadow-xl rounded-2xl p-6 scroll-mt-28 md:scroll-mt-32">
-              <h3 className="text-2xl font-semibold text-white mb-2">About</h3>
-              <p className="text-slate-300">Short bio placeholder. (We'll replace this with your real copy later.)</p>
+            <section id="about-section" className="mt-10 scroll-mt-28 md:scroll-mt-32">
+              <h3 className="text-3xl font-bold text-white mb-4">About</h3>
+              <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] backdrop-blur p-6 shadow-xl">
+                <span className="pointer-events-none absolute -top-24 -right-24 h-64 w-64 rounded-full bg-sky-500/10 blur-3xl" aria-hidden />
+                <About />
+              </div>
             </section>
 
             {/* Experience timeline */}
