@@ -3,7 +3,7 @@ import "./index.css";
 import "./App.css";
 import ThreeStage from "./ThreeStage.jsx";
 import { experience, education } from "./timelineData.js";
-import { projects } from "./projectsData.js"; // <-- NEW
+import { projects } from "./projectsData.js";
 
 export default function App() {
   const [mode, setMode] = useState("home");
@@ -16,7 +16,7 @@ export default function App() {
 
   const scrollTo = (id) => document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
 
-  // Magnetization, global click, and scrollspy logic remain the same as Commit 9
+  // Magnetization hook
   useEffect(() => {
     const lastKeyRef = { current: null };
     const ENTER_R = 28, EXIT_R = 40;
@@ -38,12 +38,14 @@ export default function App() {
     return () => { clearInterval(id); if (window.robotAPI) window.robotAPI.onEffectorScreenPos = null; };
   }, [navRefs]);
 
+  // Click-through when magnetized
   useEffect(() => {
     const onPointerDown = (e) => { if (!magnetKey) return; e.preventDefault(); navHandlers[magnetKey]?.(); };
     window.addEventListener("pointerdown", onPointerDown, { capture: true });
     return () => window.removeEventListener("pointerdown", onPointerDown, { capture: true });
   }, [magnetKey]);
 
+  // Scrollspy in timeline
   useEffect(() => {
     if (mode !== "timeline") return; const container = timelineRef.current; if (!container) return;
     const sections = () => ([
@@ -70,6 +72,7 @@ export default function App() {
     return () => { container.removeEventListener("scroll", onScroll); window.removeEventListener("resize", onScroll); if (raf) cancelAnimationFrame(raf); };
   }, [mode, magnetKey, activeNav, navRefs]);
 
+  // Nav handlers
   const goHome = () => { setMode("home"); setActiveNav("home"); window.scrollTo({ top: 0, behavior: "smooth" }); };
   const goAbout = () => { setMode("timeline"); setActiveNav("about"); scrollTo("about-section"); };
   const goCareer = () => { setMode("timeline"); setActiveNav("career"); scrollTo("experience-section"); };
@@ -181,14 +184,26 @@ export default function App() {
 
       {mode === "home" && (
         <div className="relative z-10 flex flex-col items-center pt-24 md:pt-28">
-          <div className="h-32 w-32 md:h-36 md:w-36 rounded-full overflow-hidden ring-2 ring-white/20 shadow-lg bg-gradient-to-br from-sky-600 to-sky-500 flex items-center justify-center">
-            <div className="h-full w-full flex items-center justify-center text-white font-semibold text-2xl">AS</div>
-          </div>
+          {/* Avatar now uses your real photo from /public/Me2.jpg */}
+          <figure className="relative">
+            <img
+              src="/Me2.jpg"
+              alt="Portrait of Aryaman Sharma"
+              width="288"
+              height="288"
+              loading="eager"
+              decoding="async"
+              className="h-32 w-32 md:h-36 md:w-36 rounded-full object-cover ring-2 ring-white/20 shadow-xl"
+            />
+            {/* subtle glow ring */}
+            <span className="pointer-events-none absolute inset-0 rounded-full ring-8 ring-sky-500/10 blur-[2px]" aria-hidden="true" />
+          </figure>
+
           <h1 className="mt-5 text-center text-6xl md:text-7xl font-black tracking-tight">
             Hi, I'm <span className="text-sky-400">Aryaman</span> 👋
           </h1>
-          <p className="mt-3 max-w-[48ch] text-center text-slate-300 text-lg md:text-xl">
-            Explore some projects below — more details inside each repo.
+          <p className="mt-3 max-w-[56ch] text-center text-slate-300 text-lg md:text-xl">
+            Full‑stack engineer with a soft spot for ML + 3D. I build reliable systems and playful interfaces.
           </p>
           <div className="mt-6 flex gap-3">
             <a href="#timeline-top" onClick={(e)=>{e.preventDefault(); setMode("timeline");}} className="rounded-xl bg-sky-600 hover:bg-sky-500 px-5 py-3 font-semibold shadow">View Timeline</a>
