@@ -1,57 +1,136 @@
-import { useState, useRef, useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import "./index.css";
 import "./App.css";
 import ThreeStage from "./ThreeStage.jsx";
 
 export default function App() {
-  const [mode, setMode] = useState("home"); // 'home' | 'timeline'
+  const [mode, setMode] = useState("home");
+  const [activeNav, setActiveNav] = useState("home");
+  const [magnetKey, setMagnetKey] = useState(null);
+
   const timelineRef = useRef(null);
 
-  const scrollTo = (id) => {
-    const el = document.getElementById(id);
-    if (el) el.scrollIntoView({ behavior: "smooth" });
+  const navKeys = ["home", "about", "career", "education", "projects", "contact"];
+  const navRefs = useRef(Object.fromEntries(navKeys.map((k) => [k, { current: null }]))).current;
+
+  const scrollTo = (id) => document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
+
+  // Hook effector screen-pos → magnetize to nearest nav item (with hysteresis)
+  useEffect(() => {
+    const lastKeyRef = { current: null };
+    const ENTER_R = 28, EXIT_R = 40; // px
+
+    const onEffPos = ({ x, y }) => {
+      let bestKey = null, bestEl = null, bestDist = Infinity;
+      for (const key of navKeys) {
+        const el = navRefs[key]?.current; if (!el) continue;
+        const r = el.getBoundingClientRect();
+        const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+        const d = Math.hypot(x - cx, y - cy);
+        if (d < bestDist) { bestDist = d; bestKey = key; bestEl = el; }
+      }
+      const thresh = (lastKeyRef.current && bestKey === lastKeyRef.current) ? EXIT_R : ENTER_R;
+      if (bestDist < thresh) {
+        setMagnetKey(bestKey); lastKeyRef.current = bestKey;
+        try { window.robotAPI?.setTargetFromElement?.(bestEl); } catch {}
+      } else { setMagnetKey(null); lastKeyRef.current = null; }
+    };
+
+    const attach = () => { if (window.robotAPI) window.robotAPI.onEffectorScreenPos = onEffPos; };
+    attach(); const id = setInterval(attach, 300);
+    return () => { clearInterval(id); if (window.robotAPI) window.robotAPI.onEffectorScreenPos = null; };
+  }, [navRefs]);
+
+  // Global click: when magnetized, trigger that nav item
+  useEffect(() => {
+    const onPointerDown = (e) => {
+      if (!magnetKey) return;
+      e.preventDefault();
+      const handler = navHandlers[magnetKey]; if (handler) handler();
+    };
+    window.addEventListener("pointerdown", onPointerDown, { capture: true });
+    return () => window.removeEventListener("pointerdown", onPointerDown, { capture: true });
+  }, [magnetKey]);
+
+  // Scrollspy inside timeline: highlight the section near viewport pivot & glance
+  useEffect(() => {
+    if (mode !== "timeline") return; const container = timelineRef.current; if (!container) return;
+    const sections = () => ([
+      ["about", document.getElementById("about-section")],
+      ["career", document.getElementById("experience-section")],
+      ["education", document.getElementById("education-section")],
+      ["projects", document.getElementById("projects-section")],
+      ["contact", document.getElementById("contact-section")],
+    ]);
+
+    let raf = 0;
+    const pickActive = () => {
+      const list = sections(); const crect = container.getBoundingClientRect();
+      const pivot = crect.top + crect.height * 0.35; // early switch
+      let bestKey = null, bestEl = null, bestDist = Infinity;
+      for (const [key, el] of list) {
+        if (!el) continue; const r = el.getBoundingClientRect();
+        const d = Math.abs(r.top - pivot); if (d < bestDist) { bestDist = d; bestKey = key; bestEl = el; }
+      }
+      if (bestKey && bestKey !== activeNav && !magnetKey) {
+        setActiveNav(bestKey);
+        const navEl = navRefs[bestKey]?.current; if (navEl) try { window.robotAPI?.setTargetFromElement?.(navEl); } catch {}
+      }
+    };
+
+    const onScroll = () => { if (raf) cancelAnimationFrame(raf); raf = requestAnimationFrame(pickActive); };
+    container.addEventListener("scroll", onScroll, { passive: true }); window.addEventListener("resize", onScroll);
+    pickActive();
+    return () => { container.removeEventListener("scroll", onScroll); window.removeEventListener("resize", onScroll); if (raf) cancelAnimationFrame(raf); };
+  }, [mode, magnetKey, activeNav, navRefs]);
+
+  // Nav handlers
+  const goHome = () => { setMode("home"); setActiveNav("home"); window.scrollTo({ top: 0, behavior: "smooth" }); };
+  const goAbout = () => { setMode("timeline"); setActiveNav("about"); scrollTo("about-section"); };
+  const goCareer = () => { setMode("timeline"); setActiveNav("career"); scrollTo("experience-section"); };
+  const goEducation = () => { setMode("timeline"); setActiveNav("education"); scrollTo("education-section"); };
+  const goProjects = () => { setMode("timeline"); setActiveNav("projects"); scrollTo("projects-section"); };
+  const goContact = () => { setMode("timeline"); setActiveNav("contact"); scrollTo("contact-section"); };
+  const navHandlers = { home: goHome, about: goAbout, career: goCareer, education: goEducation, projects: goProjects, contact: goContact };
+
+  const NavButton = ({ k, label }) => {
+    const isActive = activeNav === k || magnetKey === k || (k === "home" && mode === "home");
+    return (
+      <button
+        ref={(el) => (navRefs[k].current = el)}
+        onMouseEnter={() => window.robotAPI?.setTargetFromElement?.(navRefs[k]?.current)}
+        onFocus={() => window.robotAPI?.setTargetFromElement?.(navRefs[k]?.current)}
+        onClick={(e) => { e.preventDefault(); navHandlers[k]?.(); }}
+        className={`px-3 py-2 rounded-full text-sm md:text-base transition ${isActive ? "text-sky-400 ring-2 ring-sky-500/60" : "text-slate-300 hover:text-white hover:ring-2 hover:ring-sky-500/40"}`}
+        aria-current={isActive ? "page" : undefined}
+      >
+        {label}
+      </button>
+    );
   };
 
-  useEffect(() => {
-    if (mode !== "timeline") return;
-    timelineRef.current?.scrollTo({ top: 0 });
-  }, [mode]);
-
-  const NavLink = ({ onClick, children, active }) => (
-    <button
-      onClick={onClick}
-      className={`px-3 py-2 rounded-full text-sm md:text-base transition ${
-        active
-          ? "text-sky-400 ring-2 ring-sky-500/60"
-          : "text-slate-300 hover:text-white hover:ring-2 hover:ring-sky-500/40"
-      }`}
-    >
-      {children}
-    </button>
-  );
-
   const topNav = (
-    <nav id="top-nav" aria-label="Primary" className="fixed left-1/2 -translate-x-1/2 top-3 z-50">
+    <nav id="top-nav" aria-label="Primary" className="fixed left-1/2 -translate-x-1/2 top-3 z-50 pointer-events-auto">
       <div className="hidden md:flex items-center gap-6 rounded-full border border-white/10 bg-zinc-900/60 backdrop-blur px-4 py-2 shadow-lg">
-        <NavLink onClick={() => setMode("home")} active={mode === "home"}>Home</NavLink>
-        <NavLink onClick={() => { setMode("timeline"); scrollTo("about-section"); }}>About</NavLink>
-        <NavLink onClick={() => { setMode("timeline"); scrollTo("experience-section"); }}>Career</NavLink>
-        <NavLink onClick={() => { setMode("timeline"); scrollTo("education-section"); }}>Education</NavLink>
-        <NavLink onClick={() => { setMode("timeline"); scrollTo("projects-section"); }}>Projects</NavLink>
-        <NavLink onClick={() => { setMode("timeline"); scrollTo("contact-section"); }}>Contact</NavLink>
+        <NavButton k="home" label="Home" />
+        <NavButton k="about" label="About" />
+        <NavButton k="career" label="Career" />
+        <NavButton k="education" label="Education" />
+        <NavButton k="projects" label="Projects" />
+        <NavButton k="contact" label="Contact" />
       </div>
-      {/* Mobile */}
+      {/* Mobile: keep simple; robot still glances on focus */}
       <div className="md:hidden flex items-center gap-2">
         <details className="[&_summary::-webkit-details-marker]:hidden">
           <summary className="rounded-lg border border-white/20 bg-zinc-900/70 text-white px-3 py-2 cursor-pointer">☰</summary>
           <div className="absolute left-1/2 -translate-x-1/2 mt-2 w-[92vw] max-w-sm rounded-2xl border border-white/10 bg-zinc-900/90 backdrop-blur p-3 shadow-xl">
             <div className="flex flex-col gap-2">
-              <NavLink onClick={() => setMode("home")} active={mode === "home"}>Home</NavLink>
-              <NavLink onClick={() => { setMode("timeline"); scrollTo("about-section"); }}>About</NavLink>
-              <NavLink onClick={() => { setMode("timeline"); scrollTo("experience-section"); }}>Career</NavLink>
-              <NavLink onClick={() => { setMode("timeline"); scrollTo("education-section"); }}>Education</NavLink>
-              <NavLink onClick={() => { setMode("timeline"); scrollTo("projects-section"); }}>Projects</NavLink>
-              <NavLink onClick={() => { setMode("timeline"); scrollTo("contact-section"); }}>Contact</NavLink>
+              <NavButton k="home" label="Home" />
+              <NavButton k="about" label="About" />
+              <NavButton k="career" label="Career" />
+              <NavButton k="education" label="Education" />
+              <NavButton k="projects" label="Projects" />
+              <NavButton k="contact" label="Contact" />
             </div>
           </div>
         </details>
@@ -61,13 +140,9 @@ export default function App() {
 
   return (
     <div className="relative w-full h-screen overflow-hidden bg-[#0b0f14] text-white font-[Inter,ui-sans-serif,system-ui]">
-      {/* Three.js background */}
       <ThreeStage />
-
-      {/* Top center nav */}
       {topNav}
 
-      {/* Home screen */}
       {mode === "home" && (
         <div className="relative z-10 flex flex-col items-center pt-24 md:pt-28">
           <div className="h-32 w-32 md:h-36 md:w-36 rounded-full overflow-hidden ring-2 ring-white/20 shadow-lg bg-gradient-to-br from-sky-600 to-sky-500 flex items-center justify-center">
@@ -77,7 +152,7 @@ export default function App() {
             Hi, I'm <span className="text-sky-400">Aryaman</span> 👋
           </h1>
           <p className="mt-3 max-w-[48ch] text-center text-slate-300 text-lg md:text-xl">
-            Background Three.js is live. Will morph this into the robotic arm.
+            Move your mouse — the arm will glance at nav items. Scrollspy engages on the Timeline view.
           </p>
           <div className="mt-6 flex gap-3">
             <a href="#timeline-top" onClick={(e)=>{e.preventDefault(); setMode("timeline");}} className="rounded-xl bg-sky-600 hover:bg-sky-500 px-5 py-3 font-semibold shadow">View Timeline</a>
@@ -86,7 +161,6 @@ export default function App() {
         </div>
       )}
 
-      {/* Timeline screen */}
       {mode === "timeline" && (
         <div ref={timelineRef} id="timeline" className="absolute inset-0 overflow-y-auto z-10">
           <div className="pointer-events-none sticky top-0 z-0">
@@ -103,7 +177,7 @@ export default function App() {
 
             <section id="about-section" className="mt-10 backdrop-blur-md bg-white/[0.04] border border-white/10 shadow-xl rounded-2xl p-6 scroll-mt-28 md:scroll-mt-32">
               <h3 className="text-2xl font-semibold text-white mb-2">About</h3>
-              <p className="text-slate-300">Plug in real data later, the robot will glance at the active section.</p>
+              <p className="text-slate-300">Short bio placeholder.</p>
             </section>
 
             <section id="experience-section" className="relative mt-12 scroll-mt-28 md:scroll-mt-32">
@@ -145,7 +219,7 @@ export default function App() {
         </div>
       )}
 
-      {/* Skip links for accessibility */}
+      {/* Skip links */}
       <a href="#timeline-top" className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-12 bg-zinc-900 text-white px-3 py-2 rounded-md shadow">Skip to Timeline</a>
       <a href="#top-nav" className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-20 bg-zinc-900 text-white px-3 py-2 rounded-md shadow">Skip to Navigation</a>
     </div>
