@@ -5,7 +5,7 @@ export const experience = [
     company: "Falkonry",
     location: "Cupertino, CA, USA",
     bullets: [
-      "Architected OpenTelemetry collector processing 100+ metrics/s across Kubernetes clusters; ~40% lower parse overhead via JSON→Arrow IPC.",
+      "Engineered OpenTelemetry collector processing 100+ metrics/s across Kubernetes clusters; ~40% lower parse overhead via JSON→Arrow IPC.",
       "Built observability for 200+ microservices with dynamic aggregation of high‑cardinality workloads.",
       "AI‑powered anomaly correlation across 140+ signals cut SRE investigation from 45+ min to ~5 min.",
       "Automated API performance regression framework to gate releases (dev vs prod).",
