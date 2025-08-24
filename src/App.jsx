@@ -2,12 +2,12 @@ import { useEffect, useRef, useState } from "react";
 import "./index.css";
 import "./App.css";
 import ThreeStage from "./ThreeStage.jsx";
+import { experience, education } from "./timelineData.js"; // <-- NEW
 
 export default function App() {
   const [mode, setMode] = useState("home");
   const [activeNav, setActiveNav] = useState("home");
   const [magnetKey, setMagnetKey] = useState(null);
-
   const timelineRef = useRef(null);
 
   const navKeys = ["home", "about", "career", "education", "projects", "contact"];
@@ -15,11 +15,10 @@ export default function App() {
 
   const scrollTo = (id) => document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
 
-  // Hook effector screen-pos → magnetize to nearest nav item (with hysteresis)
+  // --- Magnetization & hooks (unchanged from Commit 8) ---
   useEffect(() => {
     const lastKeyRef = { current: null };
-    const ENTER_R = 28, EXIT_R = 40; // px
-
+    const ENTER_R = 28, EXIT_R = 40;
     const onEffPos = ({ x, y }) => {
       let bestKey = null, bestEl = null, bestDist = Infinity;
       for (const key of navKeys) {
@@ -30,29 +29,21 @@ export default function App() {
         if (d < bestDist) { bestDist = d; bestKey = key; bestEl = el; }
       }
       const thresh = (lastKeyRef.current && bestKey === lastKeyRef.current) ? EXIT_R : ENTER_R;
-      if (bestDist < thresh) {
-        setMagnetKey(bestKey); lastKeyRef.current = bestKey;
-        try { window.robotAPI?.setTargetFromElement?.(bestEl); } catch {}
-      } else { setMagnetKey(null); lastKeyRef.current = null; }
+      if (bestDist < thresh) { setMagnetKey(bestKey); lastKeyRef.current = bestKey; try { window.robotAPI?.setTargetFromElement?.(bestEl); } catch {} }
+      else { setMagnetKey(null); lastKeyRef.current = null; }
     };
-
     const attach = () => { if (window.robotAPI) window.robotAPI.onEffectorScreenPos = onEffPos; };
     attach(); const id = setInterval(attach, 300);
     return () => { clearInterval(id); if (window.robotAPI) window.robotAPI.onEffectorScreenPos = null; };
   }, [navRefs]);
 
-  // Global click: when magnetized, trigger that nav item
   useEffect(() => {
-    const onPointerDown = (e) => {
-      if (!magnetKey) return;
-      e.preventDefault();
-      const handler = navHandlers[magnetKey]; if (handler) handler();
-    };
+    const onPointerDown = (e) => { if (!magnetKey) return; e.preventDefault(); navHandlers[magnetKey]?.(); };
     window.addEventListener("pointerdown", onPointerDown, { capture: true });
     return () => window.removeEventListener("pointerdown", onPointerDown, { capture: true });
   }, [magnetKey]);
 
-  // Scrollspy inside timeline: highlight the section near viewport pivot & glance
+  // Scrollspy in timeline
   useEffect(() => {
     if (mode !== "timeline") return; const container = timelineRef.current; if (!container) return;
     const sections = () => ([
@@ -62,22 +53,17 @@ export default function App() {
       ["projects", document.getElementById("projects-section")],
       ["contact", document.getElementById("contact-section")],
     ]);
-
     let raf = 0;
     const pickActive = () => {
       const list = sections(); const crect = container.getBoundingClientRect();
-      const pivot = crect.top + crect.height * 0.35; // early switch
+      const pivot = crect.top + crect.height * 0.35;
       let bestKey = null, bestEl = null, bestDist = Infinity;
-      for (const [key, el] of list) {
-        if (!el) continue; const r = el.getBoundingClientRect();
-        const d = Math.abs(r.top - pivot); if (d < bestDist) { bestDist = d; bestKey = key; bestEl = el; }
-      }
+      for (const [key, el] of list) { if (!el) continue; const r = el.getBoundingClientRect(); const d = Math.abs(r.top - pivot); if (d < bestDist) { bestDist = d; bestKey = key; bestEl = el; } }
       if (bestKey && bestKey !== activeNav && !magnetKey) {
         setActiveNav(bestKey);
         const navEl = navRefs[bestKey]?.current; if (navEl) try { window.robotAPI?.setTargetFromElement?.(navEl); } catch {}
       }
     };
-
     const onScroll = () => { if (raf) cancelAnimationFrame(raf); raf = requestAnimationFrame(pickActive); };
     container.addEventListener("scroll", onScroll, { passive: true }); window.addEventListener("resize", onScroll);
     pickActive();
@@ -109,6 +95,35 @@ export default function App() {
     );
   };
 
+  const TimelineList = ({ items }) => (
+    <ul className="relative border-l border-white/10 pl-6">
+      {items.map((item, idx) => (
+        <li key={idx} className="relative pb-8">
+          {/* dot */}
+          <span className="absolute -left-[0.375rem] top-2 h-2.5 w-2.5 rounded-full bg-sky-400 ring-4 ring-sky-400/20" />
+          <div className="pl-1">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h4 className="text-base md:text-lg font-semibold text-white">
+                  {item.role || item.degree} {item.company && <span className="text-slate-300">— {item.company}</span>} {item.school && <span className="text-slate-300">— {item.school}</span>}
+                </h4>
+                {item.location && <div className="text-xs md:text-sm text-slate-400 mt-0.5">{item.location}</div>}
+              </div>
+              <div className="text-xs md:text-sm text-slate-400 whitespace-nowrap">{item.period}</div>
+            </div>
+            {item.bullets?.length > 0 && (
+              <ul className="mt-2 list-disc pl-5 text-slate-300 text-sm space-y-1">
+                {item.bullets.map((b, i) => (
+                  <li key={i}>{b}</li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </li>
+      ))}
+    </ul>
+  );
+
   const topNav = (
     <nav id="top-nav" aria-label="Primary" className="fixed left-1/2 -translate-x-1/2 top-3 z-50 pointer-events-auto">
       <div className="hidden md:flex items-center gap-6 rounded-full border border-white/10 bg-zinc-900/60 backdrop-blur px-4 py-2 shadow-lg">
@@ -119,7 +134,6 @@ export default function App() {
         <NavButton k="projects" label="Projects" />
         <NavButton k="contact" label="Contact" />
       </div>
-      {/* Mobile: keep simple; robot still glances on focus */}
       <div className="md:hidden flex items-center gap-2">
         <details className="[&_summary::-webkit-details-marker]:hidden">
           <summary className="rounded-lg border border-white/20 bg-zinc-900/70 text-white px-3 py-2 cursor-pointer">☰</summary>
@@ -177,23 +191,21 @@ export default function App() {
 
             <section id="about-section" className="mt-10 backdrop-blur-md bg-white/[0.04] border border-white/10 shadow-xl rounded-2xl p-6 scroll-mt-28 md:scroll-mt-32">
               <h3 className="text-2xl font-semibold text-white mb-2">About</h3>
-              <p className="text-slate-300">Short bio placeholder.</p>
+              <p className="text-slate-300">Short bio placeholder. (We'll replace this with your real copy later.)</p>
             </section>
 
             <section id="experience-section" className="relative mt-12 scroll-mt-28 md:scroll-mt-32">
               <h3 className="text-3xl font-bold text-white mb-6">Experience</h3>
-              <ul className="space-y-6 text-slate-300">
-                <li className="backdrop-blur-md bg-white/[0.04] border border-white/10 shadow-xl rounded-2xl p-5">Role 1 — Company (year)</li>
-                <li className="backdrop-blur-md bg-white/[0.04] border border-white/10 shadow-xl rounded-2xl p-5">Role 2 — Company (year)</li>
-              </ul>
+              <div className="backdrop-blur-md bg-white/[0.04] border border-white/10 shadow-xl rounded-2xl p-5">
+                <TimelineList items={experience} />
+              </div>
             </section>
 
             <section id="education-section" className="relative mt-12 scroll-mt-28 md:scroll-mt-32">
               <h3 className="text-3xl font-bold text-white mb-6">Education</h3>
-              <ul className="space-y-6 text-slate-300">
-                <li className="backdrop-blur-md bg-white/[0.04] border border-white/10 shadow-xl rounded-2xl p-5">NYU — M.S. Computer Science</li>
-                <li className="backdrop-blur-md bg-white/[0.04] border border-white/10 shadow-xl rounded-2xl p-5">GGSIPU — B.Tech ECE</li>
-              </ul>
+              <div className="backdrop-blur-md bg-white/[0.04] border border-white/10 shadow-xl rounded-2xl p-5">
+                <TimelineList items={education} />
+              </div>
             </section>
 
             <section id="projects-section" className="mt-14 scroll-mt-28 md:scroll-mt-32">
@@ -219,7 +231,6 @@ export default function App() {
         </div>
       )}
 
-      {/* Skip links */}
       <a href="#timeline-top" className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-12 bg-zinc-900 text-white px-3 py-2 rounded-md shadow">Skip to Timeline</a>
       <a href="#top-nav" className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-20 bg-zinc-900 text-white px-3 py-2 rounded-md shadow">Skip to Navigation</a>
     </div>
