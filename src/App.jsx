@@ -1,12 +1,12 @@
 import { useState, useRef, useEffect } from "react";
 import "./index.css";
 import "./App.css";
+import ThreeStage from "./ThreeStage.jsx";
 
 export default function App() {
   const [mode, setMode] = useState("home"); // 'home' | 'timeline'
   const timelineRef = useRef(null);
 
-  // Smooth-scroll helper
   const scrollTo = (id) => {
     const el = document.getElementById(id);
     if (el) el.scrollIntoView({ behavior: "smooth" });
@@ -14,7 +14,6 @@ export default function App() {
 
   useEffect(() => {
     if (mode !== "timeline") return;
-    // On entering timeline, default to the top of the list
     timelineRef.current?.scrollTo({ top: 0 });
   }, [mode]);
 
@@ -62,6 +61,9 @@ export default function App() {
 
   return (
     <div className="relative w-full h-screen overflow-hidden bg-[#0b0f14] text-white font-[Inter,ui-sans-serif,system-ui]">
+      {/* Three.js background */}
+      <ThreeStage />
+
       {/* Top center nav */}
       {topNav}
 
@@ -69,14 +71,13 @@ export default function App() {
       {mode === "home" && (
         <div className="relative z-10 flex flex-col items-center pt-24 md:pt-28">
           <div className="h-32 w-32 md:h-36 md:w-36 rounded-full overflow-hidden ring-2 ring-white/20 shadow-lg bg-gradient-to-br from-sky-600 to-sky-500 flex items-center justify-center">
-            {/* You can place /public/Me2.jpg later; fallback initials for now */}
             <div className="h-full w-full flex items-center justify-center text-white font-semibold text-2xl">AS</div>
           </div>
           <h1 className="mt-5 text-center text-6xl md:text-7xl font-black tracking-tight">
             Hi, I'm <span className="text-sky-400">Aryaman</span> 👋
           </h1>
           <p className="mt-3 max-w-[48ch] text-center text-slate-300 text-lg md:text-xl">
-            Welcome to my portfolio — we'll add the interactive 3D robot and timelines next.
+            Background Three.js is live. Will morph this into the robotic arm.
           </p>
           <div className="mt-6 flex gap-3">
             <a href="#timeline-top" onClick={(e)=>{e.preventDefault(); setMode("timeline");}} className="rounded-xl bg-sky-600 hover:bg-sky-500 px-5 py-3 font-semibold shadow">View Timeline</a>
@@ -102,7 +103,7 @@ export default function App() {
 
             <section id="about-section" className="mt-10 backdrop-blur-md bg-white/[0.04] border border-white/10 shadow-xl rounded-2xl p-6 scroll-mt-28 md:scroll-mt-32">
               <h3 className="text-2xl font-semibold text-white mb-2">About</h3>
-              <p className="text-slate-300">Short bio goes here. We'll replace this with your real copy and add the 3D robot interactions in later commits.</p>
+              <p className="text-slate-300">Plug in real data later, the robot will glance at the active section.</p>
             </section>
 
             <section id="experience-section" className="relative mt-12 scroll-mt-28 md:scroll-mt-32">
@@ -132,7 +133,7 @@ export default function App() {
             <section id="contact-section" className="mt-14 grid gap-6 md:grid-cols-3 bg-white/[0.05] backdrop-blur border border-white/10 rounded-2xl p-6 shadow-xl scroll-mt-28 md:scroll-mt-32">
               <div className="md:col-span-1 space-y-4">
                 <h3 className="text-2xl font-semibold text-white">Contact</h3>
-                <p className="text-slate-300">We'll add a working contact form later. For now, email <a className="text-sky-400 underline" href="mailto:aryaman.25.sharma@gmail.com">aryaman.25.sharma@gmail.com</a>.</p>
+                <p className="text-slate-300">For now: <a className="text-sky-400 underline" href="mailto:aryaman.25.sharma@gmail.com">aryaman.25.sharma@gmail.com</a></p>
               </div>
               <div className="md:col-span-2">
                 <div className="rounded-xl border border-white/15 bg-white/5 p-4 text-slate-300">Form placeholder</div>
