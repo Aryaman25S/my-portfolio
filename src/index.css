@@ -2,7 +2,11 @@
 @tailwind components;
 @tailwind utilities;
 
-html, body, #root { height: 100%; }
-body { margin: 0; background: #0b0f14; }
-/* Smooth scrolling for in-page anchors */
 html { scroll-behavior: smooth; }
+
+:focus-visible { outline: 2px solid rgb(56 189 248); outline-offset: 2px; }
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
