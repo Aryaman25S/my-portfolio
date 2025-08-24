@@ -4,6 +4,7 @@ import "./App.css";
 import ThreeStage from "./ThreeStage.jsx";
 import { experience, education } from "./timelineData.js";
 import { projects } from "./projectsData.js";
+import ContactForm from "./ContactForm.jsx"; // <-- NEW
 
 export default function App() {
   const [mode, setMode] = useState("home");
@@ -16,7 +17,7 @@ export default function App() {
 
   const scrollTo = (id) => document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
 
-  // Magnetization hook
+  //  ———  START existing hooks ———
   useEffect(() => {
     const lastKeyRef = { current: null };
     const ENTER_R = 28, EXIT_R = 40;
@@ -38,14 +39,12 @@ export default function App() {
     return () => { clearInterval(id); if (window.robotAPI) window.robotAPI.onEffectorScreenPos = null; };
   }, [navRefs]);
 
-  // Click-through when magnetized
   useEffect(() => {
     const onPointerDown = (e) => { if (!magnetKey) return; e.preventDefault(); navHandlers[magnetKey]?.(); };
     window.addEventListener("pointerdown", onPointerDown, { capture: true });
     return () => window.removeEventListener("pointerdown", onPointerDown, { capture: true });
   }, [magnetKey]);
 
-  // Scrollspy in timeline
   useEffect(() => {
     if (mode !== "timeline") return; const container = timelineRef.current; if (!container) return;
     const sections = () => ([
@@ -72,7 +71,6 @@ export default function App() {
     return () => { container.removeEventListener("scroll", onScroll); window.removeEventListener("resize", onScroll); if (raf) cancelAnimationFrame(raf); };
   }, [mode, magnetKey, activeNav, navRefs]);
 
-  // Nav handlers
   const goHome = () => { setMode("home"); setActiveNav("home"); window.scrollTo({ top: 0, behavior: "smooth" }); };
   const goAbout = () => { setMode("timeline"); setActiveNav("about"); scrollTo("about-section"); };
   const goCareer = () => { setMode("timeline"); setActiveNav("career"); scrollTo("experience-section"); };
@@ -80,6 +78,7 @@ export default function App() {
   const goProjects = () => { setMode("timeline"); setActiveNav("projects"); scrollTo("projects-section"); };
   const goContact = () => { setMode("timeline"); setActiveNav("contact"); scrollTo("contact-section"); };
   const navHandlers = { home: goHome, about: goAbout, career: goCareer, education: goEducation, projects: goProjects, contact: goContact };
+  //  ———  END existing hooks  ———
 
   const NavButton = ({ k, label }) => {
     const isActive = activeNav === k || magnetKey === k || (k === "home" && mode === "home");
@@ -184,27 +183,12 @@ export default function App() {
 
       {mode === "home" && (
         <div className="relative z-10 flex flex-col items-center pt-24 md:pt-28">
-          {/* Avatar now uses your real photo from /public/Me2.jpg */}
           <figure className="relative">
-            <img
-              src="/Me2.jpg"
-              alt="Portrait of Aryaman Sharma"
-              width="288"
-              height="288"
-              loading="eager"
-              decoding="async"
-              className="h-32 w-32 md:h-36 md:w-36 rounded-full object-cover ring-2 ring-white/20 shadow-xl"
-            />
-            {/* subtle glow ring */}
+            <img src="/Me2.jpg" alt="Portrait of Aryaman Sharma" width="288" height="288" loading="eager" decoding="async" className="h-32 w-32 md:h-36 md:w-36 rounded-full object-cover ring-2 ring-white/20 shadow-xl" />
             <span className="pointer-events-none absolute inset-0 rounded-full ring-8 ring-sky-500/10 blur-[2px]" aria-hidden="true" />
           </figure>
-
-          <h1 className="mt-5 text-center text-6xl md:text-7xl font-black tracking-tight">
-            Hi, I'm <span className="text-sky-400">Aryaman</span> 👋
-          </h1>
-          <p className="mt-3 max-w-[56ch] text-center text-slate-300 text-lg md:text-xl">
-            Full‑stack engineer with a soft spot for ML + 3D. I build reliable systems and playful interfaces.
-          </p>
+          <h1 className="mt-5 text-center text-6xl md:text-7xl font-black tracking-tight">Hi, I'm <span className="text-sky-400">Aryaman</span> 👋</h1>
+          <p className="mt-3 max-w-[56ch] text-center text-slate-300 text-lg md:text-xl">Full‑stack engineer with a soft spot for ML + 3D. I build reliable systems and playful interfaces.</p>
           <div className="mt-6 flex gap-3">
             <a href="#timeline-top" onClick={(e)=>{e.preventDefault(); setMode("timeline");}} className="rounded-xl bg-sky-600 hover:bg-sky-500 px-5 py-3 font-semibold shadow">View Timeline</a>
             <a href="#projects-section" onClick={(e)=>{e.preventDefault(); setMode("timeline"); scrollTo("projects-section");}} className="rounded-xl border border-white/20 bg-white/5 px-5 py-3 text-slate-200 hover:border-sky-500/40">Projects</a>
@@ -257,10 +241,13 @@ export default function App() {
             <section id="contact-section" className="mt-14 grid gap-6 md:grid-cols-3 bg-white/[0.05] backdrop-blur border border-white/10 rounded-2xl p-6 shadow-xl scroll-mt-28 md:scroll-mt-32">
               <div className="md:col-span-1 space-y-4">
                 <h3 className="text-2xl font-semibold text-white">Contact</h3>
-                <p className="text-slate-300">For now: <a className="text-sky-400 underline" href="mailto:aryaman.25.sharma@gmail.com">aryaman.25.sharma@gmail.com</a></p>
+                <p className="text-slate-300">
+                  Prefer email? <a className="text-sky-400 underline" href="mailto:aryaman.25.sharma@gmail.com">aryaman.25.sharma@gmail.com</a>
+                </p>
+                <p className="text-slate-400 text-sm">This form opens your default mail app and pre‑fills the message.</p>
               </div>
               <div className="md:col-span-2">
-                <div className="rounded-xl border border-white/15 bg-white/5 p-4 text-slate-300">Form placeholder</div>
+                <ContactForm />
               </div>
             </section>
 
