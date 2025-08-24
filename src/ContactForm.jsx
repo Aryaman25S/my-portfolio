@@ -41,28 +41,24 @@ export default function ContactForm() {
     e.preventDefault();
     setTouched({ name: true, email: true, message: true });
     if (hasErrors) return;
-    // Try to open the user's email app
-    window.location.href = mailtoHref;
+    window.location.href = mailtoHref; // open default mail app
     setJustOpenedEmail(true);
   };
 
-  const copyEmail = async () => {
-    try {
-      await navigator.clipboard.writeText(EMAIL_TO);
-    } catch {}
-  };
-
-  const copyMessage = async () => {
-    try {
-      await navigator.clipboard.writeText(`${name}\n${email}\n\n${message}`.trim());
-    } catch {}
+  // NEW — clear only the message field
+  const clearMessage = () => {
+    setMessage("");
+    setTouched((t) => ({ ...t, message: false }));
+    // focus textarea for convenience
+    const el = document.getElementById("message");
+    if (el) el.focus();
   };
 
   return (
     <form onSubmit={handleSubmit} noValidate className="space-y-4">
       {justOpenedEmail && (
         <div className="rounded-xl border border-emerald-400/30 bg-emerald-400/10 text-emerald-200 px-4 py-3 text-sm">
-          Thanks! Your email app should have opened. If not, use the buttons below.
+          Thanks! Your email app should have opened. If not, use the button below.
         </div>
       )}
 
@@ -140,11 +136,13 @@ export default function ContactForm() {
         >
           Open Mail App
         </a>
-        <button type="button" onClick={copyEmail} className="rounded-xl px-4 py-2.5 border border-white/10 bg-white/5 text-slate-200 hover:border-sky-500/40">
-          Copy address
-        </button>
-        <button type="button" onClick={copyMessage} className="rounded-xl px-4 py-2.5 border border-white/10 bg-white/5 text-slate-200 hover:border-sky-500/40">
-          Copy message
+        {/* REPLACED copy buttons with Clear */}
+        <button
+          type="button"
+          onClick={clearMessage}
+          className="rounded-xl px-4 py-2.5 border border-white/10 bg-white/5 text-slate-200 hover:border-sky-500/40"
+        >
+          Clear
         </button>
       </div>
     </form>

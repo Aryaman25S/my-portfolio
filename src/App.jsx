@@ -5,7 +5,7 @@ import ThreeStage from "./ThreeStage.jsx";
 import { experience, education } from "./timelineData.js";
 import { projects } from "./projectsData.js";
 import ContactForm from "./ContactForm.jsx";
-import About from "./About.jsx"; // NEW
+import About from "./About.jsx"; 
 
 export default function App() {
   const [mode, setMode] = useState("home"); // 'home' | 'timeline'
@@ -18,7 +18,7 @@ export default function App() {
 
   const scrollTo = (id) => document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
 
-  // ===== Magnetization: keep as-is, only reading effector screen pos from window.robotAPI
+  // Magnetization (reads window.robotAPI effector screen pos)
   useEffect(() => {
     const lastKeyRef = { current: null };
     const ENTER_R = 28, EXIT_R = 40;
@@ -47,7 +47,7 @@ export default function App() {
     return () => window.removeEventListener("pointerdown", onPointerDown, { capture: true });
   }, [magnetKey]);
 
-  // ===== Scrollspy (timeline only)
+  // Scrollspy (timeline only)
   useEffect(() => {
     if (mode !== "timeline") return; const container = timelineRef.current; if (!container) return;
     const sections = () => ([
@@ -70,7 +70,7 @@ export default function App() {
     return () => { container.removeEventListener("scroll", onScroll); window.removeEventListener("resize", onScroll); if (raf) cancelAnimationFrame(raf); };
   }, [mode, magnetKey, activeNav, navRefs]);
 
-  // ===== Nav handlers
+  // Nav handlers
   const goHome = () => { setMode("home"); setActiveNav("home"); window.scrollTo({ top: 0, behavior: "smooth" }); };
   const goAbout = () => { setMode("timeline"); setActiveNav("about"); scrollTo("about-section"); };
   const goCareer = () => { setMode("timeline"); setActiveNav("career"); scrollTo("experience-section"); };
@@ -96,7 +96,7 @@ export default function App() {
     );
   };
 
-  // ===== Exact timeline layout (center spine + alternating cards)
+  // Timeline layout
   const EventCard = ({ item, side }) => (
     <div className={`w-full md:w-1/2 ${side === "left" ? "md:pr-8" : "md:pl-8"}`}>
       <div className="relative">
@@ -127,12 +127,10 @@ export default function App() {
 
   const EventConnector = ({ side }) => (
     <>
-      {/* dot centered on the spine */}
       <span
         className="hidden md:block absolute left-1/2 -translate-x-1/2 top-8 h-2.5 w-2.5 rounded-full bg-sky-400 ring-4 ring-sky-400/20"
         aria-hidden
       />
-      {/* connector aligned to the dot's *center* (2rem + 4px => 36px) */}
       <span
         className={`hidden md:block absolute top-[calc(2rem+4px)] h-[2px] w-8 bg-white/15 ${
           side === "left" ? "right-1/2" : "left-1/2"
@@ -146,11 +144,10 @@ export default function App() {
     <section id={id} className="relative mt-12 scroll-mt-28 md:scroll-mt-32">
       <h3 className="text-3xl font-bold text-white mb-6">{title}</h3>
       <div className="relative">
-        {/* center spine */}
         <div className="hidden md:block absolute left-1/2 -translate-x-1/2 top-0 bottom-0 w-px bg-gradient-to-b from-white/5 via-white/10 to-white/5" aria-hidden />
         <ul className="space-y-14">
           {items.map((item, idx) => {
-            const side = idx % 2 === 0 ? "left" : "right"; // alternate sides
+            const side = idx % 2 === 0 ? "left" : "right";
             return (
               <li key={`${title}-${idx}`} className={`relative flex ${side === "left" ? "justify-start" : "justify-end"}`}>
                 <EventConnector side={side} />
@@ -163,7 +160,6 @@ export default function App() {
     </section>
   );
 
-  // ===== Projects grid (unchanged)
   const ProjectCard = ({ p }) => (
     <article className="rounded-2xl border border-white/10 bg-white/[0.05] backdrop-blur p-5 shadow hover:shadow-lg transition">
       {p.period && (
@@ -225,7 +221,7 @@ export default function App() {
       {topNav}
 
       <main id="main" role="main">
-        {/* HOME - remains mounted; CSS fade/translate */}
+        {/* HOME */}
         <section
           id="home-screen"
           aria-hidden={isTimeline}
@@ -241,7 +237,7 @@ export default function App() {
           <p className="mt-3 max-w-[56ch] text-center text-slate-300 text-lg md:text-xl">Full‑stack engineer with a soft spot for ML + 3D. I build reliable systems and playful interfaces.</p>
         </section>
 
-        {/* TIMELINE - slides from bottom */}
+        {/* TIMELINE */}
         <section
           ref={timelineRef}
           id="timeline"
@@ -250,7 +246,6 @@ export default function App() {
             isTimeline ? "translate-y-0 opacity-100" : "translate-y-full opacity-0 pointer-events-none"
           }`}
         >
-          {/* viewport top gradient cap */}
           <div className="pointer-events-none sticky top-0 z-0"><div className="h-[40vh] bg-gradient-to-b from-slate-950/60 via-slate-950/85 to-transparent" /></div>
 
           <div className="relative max-w-5xl mx-auto px-6 py-16" id="timeline-top">
@@ -270,10 +265,10 @@ export default function App() {
               </div>
             </section>
 
-            {/* Experience timeline */}
+            {/* Experience */}
             <SectionTimeline id="experience-section" title="Experience" items={experience} />
 
-            {/* Education timeline */}
+            {/* Education */}
             <SectionTimeline id="education-section" title="Education" items={education} />
 
             {/* Projects */}
@@ -286,9 +281,24 @@ export default function App() {
 
             {/* Contact */}
             <section id="contact-section" className="mt-14 grid gap-6 md:grid-cols-3 bg-white/[0.05] backdrop-blur border border-white/10 rounded-2xl p-6 shadow-xl scroll-mt-28 md:scroll-mt-32">
-              <div className="md:col-span-1 space-y-4">
+              <div className="md:col-span-1 space-y-5">
                 <h3 className="text-2xl font-semibold text-white">Contact</h3>
-                <p className="text-slate-300">Prefer email? <a className="text-sky-400 underline" href="mailto:aryaman.25.sharma@gmail.com">aryaman.25.sharma@gmail.com</a></p>
+                <p className="text-slate-300">
+                  Prefer email? Reach me at
+                  {" "}
+                  <a className="text-sky-400 underline" href="mailto:aryaman.25.sharma@gmail.com">aryaman.25.sharma@gmail.com</a>.
+                </p>
+
+                <div>
+                  <div className="text-xs font-semibold tracking-wider text-slate-400">PHONE</div>
+                  <a href="tel:+16464185476" className="text-sky-400 hover:text-sky-300">+1 (646) 418-5476</a>
+                </div>
+
+                <div>
+                  <div className="text-xs font-semibold tracking-wider text-slate-400">LINKEDIN</div>
+                  <a href="https://linkedin.com/in/aryaman-sharma/" target="_blank" rel="noreferrer noopener" className="text-sky-400 hover:text-sky-300">linkedin.com/in/aryaman-sharma/</a>
+                </div>
+
                 <p className="text-slate-400 text-sm">This form opens your default mail app and pre‑fills the message.</p>
               </div>
               <div className="md:col-span-2">
