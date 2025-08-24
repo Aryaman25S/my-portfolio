@@ -6,6 +6,7 @@ import { experience, education } from "./timelineData.js";
 import { projects } from "./projectsData.js";
 import ContactForm from "./ContactForm.jsx";
 import About from "./About.jsx";
+import TypingTitles from "./TypingTitles.jsx";
 
 export default function App() {
   const [mode, setMode] = useState("home"); // 'home' | 'timeline'
@@ -210,7 +211,7 @@ export default function App() {
             <span className="pointer-events-none absolute inset-0 rounded-full ring-8 ring-sky-500/10 blur-[2px]" aria-hidden="true" />
           </figure>
           <h1 className="mt-5 text-center text-6xl md:text-7xl font-black tracking-tight">Hi, I'm <span className="text-sky-400">Aryaman</span> 👋</h1>
-          <p className="mt-3 max-w-[56ch] text-center text-slate-300 text-lg md:text-xl">Full‑stack engineer with a soft spot for ML + 3D. I build reliable systems and playful interfaces.</p>
+          <p className="mt-3 max-w-[56ch] text-center text-slate-300 text-lg md:text-xl">Welcome to my portfolio! Best experienced on desktop for the full interactive robot.</p>
         </section>
 
         {/* TIMELINE - slides from bottom */}
