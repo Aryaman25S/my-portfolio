@@ -1,12 +1,51 @@
-# React + Vite
+# Aryaman Sharma — Portfolio
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Interactive portfolio built with **React + Vite + Tailwind v3**, featuring a **Three.js** robotic arm (CCD IK) that glances at UI targets.
 
-Currently, two official plugins are available:
+## Stack
+- React 18, Vite
+- Tailwind CSS **v3.4.10** (pinned to avoid v4 plugin changes)
+- Three.js, Framer Motion
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## Getting Started
+```bash
+# install deps
+npm install
 
-## Expanding the ESLint configuration
+# run dev server
+npm run dev
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+# build for production
+npm run build
+npm run preview
+```
+
+> **Tailwind note**: This project intentionally pins `tailwindcss@3.4.10`. If you upgrade to v4, switch your PostCSS plugin to `@tailwindcss/postcss` and migrate the config.
+
+## Project Structure
+```
+src/
+  App.jsx          # App shell + magnetized nav + sections
+  ThreeStage.jsx   # Three.js stage + CCD IK, cursor targeting
+  timelineData.js  # Experience & Education entries
+  projectsData.js  # Projects grid data
+  ContactForm.jsx  # Validated contact form (mailto fallback)
+public/
+  Me2.jpg          # Hero/avatar + OG image
+  favicon.svg      # Favicon
+  site.webmanifest # PWA meta (minimal)
+```
+
+## Features
+- Robotic arm background (Three.js) with **CCD IK** that follows cursor or UI elements
+- Magnetized top navigation with **scrollspy**
+- Experience & Education vertical timelines
+- Projects grid with tech badges and external links
+- Contact form with validation and mailto fallback
+
+## Deploying
+- **GitHub Pages**: build with `npm run build` and serve `dist/` via your preferred action or a static host.
+- **Vercel/Netlify**: framework = Vite, build = `npm run build`, output = `dist`.
+
+## License
+Personal portfolio — all rights reserved.
