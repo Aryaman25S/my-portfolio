@@ -129,11 +129,18 @@ export default function ThreeStage() {
       return ring;
     };
 
-    // --- Dimensions ---
+    // --- Dimensions & workspace ---
     const BASE_HEIGHT = 0.35;
     const L1 = 2.2;
     const L2 = 2.0;
     const L3 = 1.4;
+    const MAX_REACH = L1 + L2 + L3 - 0.1;
+
+    const TABLE_TOP_Y = 0.0;
+    const MAX_LINK_RADIUS = 0.24;
+    const EE_CLEARANCE = MAX_LINK_RADIUS + 0.06;
+    const BASE_MIN_EE_Y = TABLE_TOP_Y + EE_CLEARANCE;
+    const getMinEEY = () => BASE_MIN_EE_Y; // simple for now
 
     // --- Robot ---
     const robot = new THREE.Group();
@@ -180,7 +187,7 @@ export default function ThreeStage() {
     wristPitch.add(wristLink);
     const j3 = wristYaw; const j4 = wristPitch;
 
-    // End effector head (visual only for now)
+    // End effector
     const effector = new THREE.Group(); effector.position.set(0, L3, 0); j4.add(effector);
     const head = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.18, 0.25, 24), darkMetal);
     head.rotation.x = Math.PI / 2; head.castShadow = true; head.receiveShadow = true; effector.add(head);
@@ -196,36 +203,166 @@ export default function ThreeStage() {
     );
     effectorTip.position.z = 0.24; effector.add(effectorTip);
 
-    // Slight tilt for natural stance
+    // Natural stance tilt
     j0.rotation.x = THREE.MathUtils.degToRad(-8);
 
-    // --- Resize handling ---
+    // ---------------------------------------------
+    // IK UTILITIES
+    const joints = [j0, j1, j2, j3, j4];
+    // [xMin, xMax, yMin, yMax, zMin, zMax] per joint in radians
+    const limits = [
+      [THREE.MathUtils.degToRad(-15), THREE.MathUtils.degToRad(15),  THREE.MathUtils.degToRad(-150), THREE.MathUtils.degToRad(150), THREE.MathUtils.degToRad(-15), THREE.MathUtils.degToRad(15)],
+      [THREE.MathUtils.degToRad(-25), THREE.MathUtils.degToRad(95),  THREE.MathUtils.degToRad(-20),  THREE.MathUtils.degToRad(20),  THREE.MathUtils.degToRad(-35), THREE.MathUtils.degToRad(35)],
+      [THREE.MathUtils.degToRad(-5),  THREE.MathUtils.degToRad(140), THREE.MathUtils.degToRad(-15),  THREE.MathUtils.degToRad(15),  THREE.MathUtils.degToRad(-35), THREE.MathUtils.degToRad(35)],
+      [THREE.MathUtils.degToRad(-25), THREE.MathUtils.degToRad(25),  THREE.MathUtils.degToRad(-150), THREE.MathUtils.degToRad(150), THREE.MathUtils.degToRad(-25), THREE.MathUtils.degToRad(25)],
+      [THREE.MathUtils.degToRad(-90), THREE.MathUtils.degToRad(85),  THREE.MathUtils.degToRad(-25),  THREE.MathUtils.degToRad(25),  THREE.MathUtils.degToRad(-25), THREE.MathUtils.degToRad(25)],
+    ];
+
+    const clampEuler = (obj, lim) => {
+      if (!obj) return;
+      const e = new THREE.Euler().setFromQuaternion(obj.quaternion, "XYZ");
+      e.x = THREE.MathUtils.clamp(e.x, lim[0], lim[1]);
+      e.y = THREE.MathUtils.clamp(e.y, lim[2], lim[3]);
+      e.z = THREE.MathUtils.clamp(e.z, lim[4], lim[5]);
+      obj.quaternion.setFromEuler(e);
+    };
+
+    const getWorldPos = (obj) => {
+      if (!obj) return new THREE.Vector3(NaN, NaN, NaN);
+      obj.updateWorldMatrix(true, false);
+      return new THREE.Vector3().setFromMatrixPosition(obj.matrixWorld);
+    };
+
+    const clampToReach = (basePos, desired) => {
+      const to = desired.clone().sub(basePos);
+      const len = to.length();
+      if (!Number.isFinite(len) || len < 1e-6) return basePos.clone();
+      if (len > MAX_REACH) to.multiplyScalar(MAX_REACH / len);
+      return basePos.clone().add(to);
+    };
+
+    const clampToWorkspace = (basePos, desired) => {
+      const r = clampToReach(basePos, desired);
+      const minY = getMinEEY();
+      if (r.y < minY) r.y = minY; // keep effector above table
+      return r;
+    };
+
+    // ---------------------------------------------
+    // TARGETING (mouse → plane)
+    const target = new THREE.Vector3(2.4, 1.6, 1.2);
+    const smoothed = target.clone();
+
+    const targetPlane = new THREE.Plane();
+    const updateTargetPlane = () => {
+      const camDir = new THREE.Vector3();
+      camera.getWorldDirection(camDir);
+      const anchor = new THREE.Vector3(1.2, 1.2, 0); // around the arm
+      targetPlane.setFromNormalAndCoplanarPoint(camDir, anchor);
+    };
+    updateTargetPlane();
+
+    const raycaster = new THREE.Raycaster();
+    const ndc = new THREE.Vector2();
+
+    const setTargetFromNDC = (x, y) => {
+      ndc.set(x, y);
+      raycaster.setFromCamera(ndc, camera);
+      const hit = new THREE.Vector3();
+      if (raycaster.ray.intersectPlane(targetPlane, hit)) target.copy(hit);
+    };
+
+    const onPointerMove = (e) => {
+      const x = (e.clientX / window.innerWidth) * 2 - 1;
+      const y = -((e.clientY / window.innerHeight) * 2 - 1);
+      setTargetFromNDC(x, y);
+    };
+    window.addEventListener("pointermove", onPointerMove);
+
+    // ---------------------------------------------
+    // CCD IK SOLVER
+    const tmpV1 = new THREE.Vector3();
+    const tmpV2 = new THREE.Vector3();
+    const lastTarget = new THREE.Vector3();
+
+    const safeNormalize = (v, fallbackAxis = new THREE.Vector3(0, 1, 0)) => {
+      const len = v.length();
+      if (!Number.isFinite(len) || len < 1e-6) return fallbackAxis.clone();
+      return v.multiplyScalar(1 / len);
+    };
+
+    const IK_ALPHA = 0.12; // smoothing toward mouse target
+
+    const solveIK = () => {
+      // small early-out: if target didn't move much
+      if (lastTarget.distanceToSquared(target) < 1e-5) return;
+
+      smoothed.set(
+        THREE.MathUtils.lerp(smoothed.x, target.x, IK_ALPHA),
+        THREE.MathUtils.lerp(smoothed.y, target.y, IK_ALPHA),
+        THREE.MathUtils.lerp(smoothed.z, target.z, IK_ALPHA)
+      );
+
+      const basePos = getWorldPos(j0);
+      const workingTarget = clampToWorkspace(basePos, smoothed);
+
+      const iterations = 8;
+      for (let it = 0; it < iterations; it++) {
+        scene.updateMatrixWorld(true);
+        for (let i = joints.length - 1; i >= 0; i--) {
+          const joint = joints[i]; if (!joint) continue;
+          const effW = getWorldPos(effector);
+          const jInv = new THREE.Matrix4().copy(joint.matrixWorld).invert();
+          const el = tmpV1.copy(effW).applyMatrix4(jInv);
+          const tl = tmpV2.copy(workingTarget).applyMatrix4(jInv);
+          safeNormalize(el);
+          safeNormalize(tl);
+          const q = new THREE.Quaternion().setFromUnitVectors(el, tl);
+          if (Number.isNaN(q.x)) continue;
+          const newQ = new THREE.Quaternion().multiplyQuaternions(joint.quaternion, q);
+          joint.quaternion.slerp(newQ, 0.5);
+          clampEuler(joint, limits[i]);
+        }
+      }
+
+      // keep head somewhat facing camera for a nice look
+      const camPos = new THREE.Vector3();
+      camera.getWorldPosition(camPos);
+      effector.lookAt(camPos);
+
+      lastTarget.copy(target);
+    };
+
+    // ---------------------------------------------
+    // Resize
     const onResize = () => {
       if (!el) return;
       renderer.setSize(el.clientWidth, el.clientHeight);
       camera.aspect = Math.max(el.clientWidth, 1) / Math.max(el.clientHeight, 1);
       camera.updateProjectionMatrix();
+      updateTargetPlane();
     };
     window.addEventListener("resize", onResize);
 
-    // --- Idle animation ---
+    // ---------------------------------------------
+    // Render loop
     let stop = false; const clock = new THREE.Clock();
     const render = () => {
       if (stop) return; requestAnimationFrame(render);
       const t = clock.getElapsedTime();
-      j0.rotation.y = Math.sin(t * 0.35) * 0.15; // slow base yaw
-      j1.rotation.x = Math.sin(t * 0.5) * 0.1 + 0.4; // shoulder bob
-      j2.rotation.x = Math.sin(t * 0.62 + 0.6) * 0.12 + 0.8; // elbow
-      j3.rotation.z = Math.sin(t * 0.8 + 1.0) * 0.08; // wrist yaw
-      j4.rotation.x = Math.sin(t * 0.9 + 2.0) * 0.1; // wrist pitch
+      // a touch of idle motion so it doesn't feel stiff
+      j0.rotation.y += Math.sin(t * 0.5) * 0.0002;
+      solveIK();
       renderer.render(scene, camera);
     };
     render();
 
-    // --- Cleanup ---
+    // ---------------------------------------------
+    // Cleanup
     return () => {
       stop = true;
       window.removeEventListener("resize", onResize);
+      window.removeEventListener("pointermove", onPointerMove);
       renderer.dispose();
       el.innerHTML = "";
     };
