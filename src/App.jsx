@@ -97,12 +97,8 @@ export default function App() {
 
   // ===== Exact timeline layout (center spine + alternating cards)
   const EventCard = ({ item, side }) => (
-    <div className={`w-full md:w-1/2 ${side === "left" ? "pr-8" : "pl-8"}`}>
+    <div className={`w-full md:w-1/2 ${side === "left" ? "md:pr-8" : "md:pl-8"}`}>
       <div className="relative">
-        {/* connector to spine */}
-        <span className={`absolute top-6 ${side === "left" ? "right-0 translate-x-full" : "left-0 -translate-x-full"} h-[2px] w-6 bg-white/15`} aria-hidden />
-        {/* dot */}
-        <span className={`absolute top-[1.05rem] ${side === "left" ? "-right-[0.375rem]" : "-left-[0.375rem]"} h-2.5 w-2.5 rounded-full bg-sky-400 ring-4 ring-sky-400/20`} aria-hidden />
         <div className="backdrop-blur-md bg-white/[0.04] border border-white/10 shadow-xl rounded-2xl p-5">
           {item.period && (
             <div className="inline-flex items-center rounded-xl bg-sky-500/10 text-sky-200 ring-1 ring-sky-400/30 px-3 py-1 text-sm font-semibold">
@@ -128,17 +124,35 @@ export default function App() {
     </div>
   );
 
+  const EventConnector = ({ side }) => (
+    <>
+      {/* dot centered on the spine */}
+      <span
+        className="hidden md:block absolute left-1/2 -translate-x-1/2 top-8 h-2.5 w-2.5 rounded-full bg-sky-400 ring-4 ring-sky-400/20"
+        aria-hidden
+      />
+      {/* connector aligned to the dot's *center* (2rem + 4px => 36px) */}
+      <span
+        className={`hidden md:block absolute top-[calc(2rem+4px)] h-[2px] w-8 bg-white/15 ${
+          side === "left" ? "right-1/2" : "left-1/2"
+        }`}
+        aria-hidden
+      />
+    </>
+  );
+
   const SectionTimeline = ({ id, title, items }) => (
     <section id={id} className="relative mt-12 scroll-mt-28 md:scroll-mt-32">
       <h3 className="text-3xl font-bold text-white mb-6">{title}</h3>
       <div className="relative">
         {/* center spine */}
-        <div className="absolute left-1/2 -translate-x-1/2 top-0 bottom-0 w-px bg-gradient-to-b from-white/5 via-white/10 to-white/5" aria-hidden />
+        <div className="hidden md:block absolute left-1/2 -translate-x-1/2 top-0 bottom-0 w-px bg-gradient-to-b from-white/5 via-white/10 to-white/5" aria-hidden />
         <ul className="space-y-14">
           {items.map((item, idx) => {
             const side = idx % 2 === 0 ? "left" : "right"; // alternate sides
             return (
-              <li key={`${title}-${idx}`} className={`flex ${side === "left" ? "justify-start" : "justify-end"}`}>
+              <li key={`${title}-${idx}`} className={`relative flex ${side === "left" ? "justify-start" : "justify-end"}`}>
+                <EventConnector side={side} />
                 <EventCard item={item} side={side} />
               </li>
             );
