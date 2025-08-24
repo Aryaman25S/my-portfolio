@@ -5,49 +5,21 @@ import ThreeStage from "./ThreeStage.jsx";
 import { experience, education } from "./timelineData.js";
 import { projects } from "./projectsData.js";
 import ContactForm from "./ContactForm.jsx";
-import About from "./About.jsx"; 
+import About from "./About.jsx";
 
 export default function App() {
   const [mode, setMode] = useState("home"); // 'home' | 'timeline'
   const [activeNav, setActiveNav] = useState("home");
-  const [magnetKey, setMagnetKey] = useState(null);
   const timelineRef = useRef(null);
 
+  // Simple list for mobile menu mapping
   const navKeys = ["home", "about", "career", "education", "projects", "contact"];
-  const navRefs = useRef(Object.fromEntries(navKeys.map((k) => [k, { current: null }]))).current;
 
   const scrollTo = (id) => document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
 
-  // Magnetization (reads window.robotAPI effector screen pos)
-  useEffect(() => {
-    const lastKeyRef = { current: null };
-    const ENTER_R = 28, EXIT_R = 40;
-    const onEffPos = ({ x, y }) => {
-      let bestKey = null, bestEl = null, bestDist = Infinity;
-      for (const key of navKeys) {
-        const el = navRefs[key]?.current; if (!el) continue;
-        const r = el.getBoundingClientRect();
-        const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
-        const d = Math.hypot(x - cx, y - cy);
-        if (d < bestDist) { bestDist = d; bestKey = key; bestEl = el; }
-      }
-      const thresh = (lastKeyRef.current && bestKey === lastKeyRef.current) ? EXIT_R : ENTER_R;
-      if (bestDist < thresh) { setMagnetKey(bestKey); lastKeyRef.current = bestKey; try { window.robotAPI?.setTargetFromElement?.(bestEl); } catch {} }
-      else { setMagnetKey(null); lastKeyRef.current = null; }
-    };
-    const attach = () => { if (window.robotAPI) window.robotAPI.onEffectorScreenPos = onEffPos; };
-    attach(); const id = setInterval(attach, 300);
-    return () => { clearInterval(id); if (window.robotAPI) window.robotAPI.onEffectorScreenPos = null; };
-  }, [navRefs]);
-
-  // Click-through when magnetized
-  useEffect(() => {
-    const onPointerDown = (e) => { if (!magnetKey) return; e.preventDefault(); navHandlers[magnetKey]?.(); };
-    window.addEventListener("pointerdown", onPointerDown, { capture: true });
-    return () => window.removeEventListener("pointerdown", onPointerDown, { capture: true });
-  }, [magnetKey]);
-
+  // =====================
   // Scrollspy (timeline only)
+  // =====================
   useEffect(() => {
     if (mode !== "timeline") return; const container = timelineRef.current; if (!container) return;
     const sections = () => ([
@@ -60,17 +32,19 @@ export default function App() {
     let raf = 0;
     const pickActive = () => {
       const list = sections(); const crect = container.getBoundingClientRect(); const pivot = crect.top + crect.height * 0.35;
-      let bestKey = null, bestEl = null, bestDist = Infinity;
-      for (const [key, el] of list) { if (!el) continue; const r = el.getBoundingClientRect(); const d = Math.abs(r.top - pivot); if (d < bestDist) { bestDist = d; bestKey = key; bestEl = el; } }
-      if (bestKey && bestKey !== activeNav && !magnetKey) { setActiveNav(bestKey); const navEl = navRefs[bestKey]?.current; if (navEl) try { window.robotAPI?.setTargetFromElement?.(navEl); } catch {} }
+      let bestKey = null, bestDist = Infinity;
+      for (const [key, el] of list) { if (!el) continue; const r = el.getBoundingClientRect(); const d = Math.abs(r.top - pivot); if (d < bestDist) { bestDist = d; bestKey = key; } }
+      if (bestKey && bestKey !== activeNav) setActiveNav(bestKey);
     };
     const onScroll = () => { if (raf) cancelAnimationFrame(raf); raf = requestAnimationFrame(pickActive); };
     container.addEventListener("scroll", onScroll, { passive: true }); window.addEventListener("resize", onScroll);
     pickActive();
     return () => { container.removeEventListener("scroll", onScroll); window.removeEventListener("resize", onScroll); if (raf) cancelAnimationFrame(raf); };
-  }, [mode, magnetKey, activeNav, navRefs]);
+  }, [mode, activeNav]);
 
+  // =====================
   // Nav handlers
+  // =====================
   const goHome = () => { setMode("home"); setActiveNav("home"); window.scrollTo({ top: 0, behavior: "smooth" }); };
   const goAbout = () => { setMode("timeline"); setActiveNav("about"); scrollTo("about-section"); };
   const goCareer = () => { setMode("timeline"); setActiveNav("career"); scrollTo("experience-section"); };
@@ -79,14 +53,14 @@ export default function App() {
   const goContact = () => { setMode("timeline"); setActiveNav("contact"); scrollTo("contact-section"); };
   const navHandlers = { home: goHome, about: goAbout, career: goCareer, education: goEducation, projects: goProjects, contact: goContact };
 
+  // =====================
+  // Nav UI (no magnetization, no robot hooks)
+  // =====================
   const NavButton = ({ k, label }) => {
-    const isActive = activeNav === k || magnetKey === k || (k === "home" && mode === "home");
+    const isActive = activeNav === k || (k === "home" && mode === "home");
     return (
       <button
         type="button"
-        ref={(el) => (navRefs[k].current = el)}
-        onMouseEnter={() => window.robotAPI?.setTargetFromElement?.(navRefs[k]?.current)}
-        onFocus={() => window.robotAPI?.setTargetFromElement?.(navRefs[k]?.current)}
         onClick={(e) => { e.preventDefault(); navHandlers[k]?.(); }}
         className={`px-3 py-2 rounded-full text-sm md:text-base transition focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/70 ${isActive ? "text-sky-400 ring-2 ring-sky-500/60" : "text-slate-300 hover:text-white hover:ring-2 hover:ring-sky-500/40"}`}
         aria-current={isActive ? "page" : undefined}
@@ -96,7 +70,9 @@ export default function App() {
     );
   };
 
-  // Timeline layout
+  // =====================
+  // Timeline UI (center spine + alternating cards)
+  // =====================
   const EventCard = ({ item, side }) => (
     <div className={`w-full md:w-1/2 ${side === "left" ? "md:pr-8" : "md:pl-8"}`}>
       <div className="relative">
@@ -127,10 +103,12 @@ export default function App() {
 
   const EventConnector = ({ side }) => (
     <>
+      {/* dot centered on the spine */}
       <span
         className="hidden md:block absolute left-1/2 -translate-x-1/2 top-8 h-2.5 w-2.5 rounded-full bg-sky-400 ring-4 ring-sky-400/20"
         aria-hidden
       />
+      {/* connector aligned to the dot's center (2rem + 4px => 36px) */}
       <span
         className={`hidden md:block absolute top-[calc(2rem+4px)] h-[2px] w-8 bg-white/15 ${
           side === "left" ? "right-1/2" : "left-1/2"
@@ -144,10 +122,11 @@ export default function App() {
     <section id={id} className="relative mt-12 scroll-mt-28 md:scroll-mt-32">
       <h3 className="text-3xl font-bold text-white mb-6">{title}</h3>
       <div className="relative">
+        {/* center spine */}
         <div className="hidden md:block absolute left-1/2 -translate-x-1/2 top-0 bottom-0 w-px bg-gradient-to-b from-white/5 via-white/10 to-white/5" aria-hidden />
         <ul className="space-y-14">
           {items.map((item, idx) => {
-            const side = idx % 2 === 0 ? "left" : "right";
+            const side = idx % 2 === 0 ? "left" : "right"; // alternate sides
             return (
               <li key={`${title}-${idx}`} className={`relative flex ${side === "left" ? "justify-start" : "justify-end"}`}>
                 <EventConnector side={side} />
@@ -199,12 +178,9 @@ export default function App() {
             <summary aria-label="Open navigation menu" className="rounded-lg border border-white/20 bg-zinc-900/70 text-white px-3 py-2 cursor-pointer select-none">☰</summary>
             <div className="absolute left-1/2 -translate-x-1/2 mt-2 w-[92vw] max-w-sm rounded-2xl border border-white/10 bg-zinc-900/90 backdrop-blur p-3 shadow-xl">
               <div className="flex flex-col gap-2">
-                <NavButton k="home" label="Home" />
-                <NavButton k="about" label="About" />
-                <NavButton k="career" label="Career" />
-                <NavButton k="education" label="Education" />
-                <NavButton k="projects" label="Projects" />
-                <NavButton k="contact" label="Contact" />
+                {navKeys.map((k) => (
+                  <NavButton key={k} k={k} label={k[0].toUpperCase() + k.slice(1)} />
+                ))}
               </div>
             </div>
           </details>
@@ -221,7 +197,7 @@ export default function App() {
       {topNav}
 
       <main id="main" role="main">
-        {/* HOME */}
+        {/* HOME - remains mounted; CSS fade/translate */}
         <section
           id="home-screen"
           aria-hidden={isTimeline}
@@ -237,7 +213,7 @@ export default function App() {
           <p className="mt-3 max-w-[56ch] text-center text-slate-300 text-lg md:text-xl">Full‑stack engineer with a soft spot for ML + 3D. I build reliable systems and playful interfaces.</p>
         </section>
 
-        {/* TIMELINE */}
+        {/* TIMELINE - slides from bottom */}
         <section
           ref={timelineRef}
           id="timeline"
@@ -246,6 +222,7 @@ export default function App() {
             isTimeline ? "translate-y-0 opacity-100" : "translate-y-full opacity-0 pointer-events-none"
           }`}
         >
+          {/* viewport top gradient cap */}
           <div className="pointer-events-none sticky top-0 z-0"><div className="h-[40vh] bg-gradient-to-b from-slate-950/60 via-slate-950/85 to-transparent" /></div>
 
           <div className="relative max-w-5xl mx-auto px-6 py-16" id="timeline-top">
@@ -265,10 +242,10 @@ export default function App() {
               </div>
             </section>
 
-            {/* Experience */}
+            {/* Experience timeline */}
             <SectionTimeline id="experience-section" title="Experience" items={experience} />
 
-            {/* Education */}
+            {/* Education timeline */}
             <SectionTimeline id="education-section" title="Education" items={education} />
 
             {/* Projects */}
@@ -284,21 +261,17 @@ export default function App() {
               <div className="md:col-span-1 space-y-5">
                 <h3 className="text-2xl font-semibold text-white">Contact</h3>
                 <p className="text-slate-300">
-                  Prefer email? Reach me at
-                  {" "}
+                  Prefer email? Reach me at {" "}
                   <a className="text-sky-400 underline" href="mailto:aryaman.25.sharma@gmail.com">aryaman.25.sharma@gmail.com</a>.
                 </p>
-
                 <div>
                   <div className="text-xs font-semibold tracking-wider text-slate-400">PHONE</div>
                   <a href="tel:+16464185476" className="text-sky-400 hover:text-sky-300">+1 (646) 418-5476</a>
                 </div>
-
                 <div>
                   <div className="text-xs font-semibold tracking-wider text-slate-400">LINKEDIN</div>
                   <a href="https://linkedin.com/in/aryaman-sharma/" target="_blank" rel="noreferrer noopener" className="text-sky-400 hover:text-sky-300">linkedin.com/in/aryaman-sharma/</a>
                 </div>
-
                 <p className="text-slate-400 text-sm">This form opens your default mail app and pre‑fills the message.</p>
               </div>
               <div className="md:col-span-2">
