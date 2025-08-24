@@ -166,7 +166,12 @@ export default function App() {
   // ===== Projects grid (unchanged)
   const ProjectCard = ({ p }) => (
     <article className="rounded-2xl border border-white/10 bg-white/[0.05] backdrop-blur p-5 shadow hover:shadow-lg transition">
-      <header className="flex items-start justify-between gap-4">
+      {p.period && (
+        <div className="inline-flex items-center rounded-xl bg-sky-500/10 text-sky-200 ring-1 ring-sky-400/30 px-3 py-1 text-sm font-semibold">
+          {p.period}
+        </div>
+      )}
+      <header className="mt-2 flex items-start justify-between gap-4">
         <h4 className="text-lg font-semibold text-white">{p.title}</h4>
         <div className="flex gap-2 text-sm">
           {p.links?.demo && (<a href={p.links.demo} className="underline text-sky-400 hover:text-sky-300" target="_blank" rel="noreferrer noopener" aria-label={`${p.title} demo (opens in a new tab)`}>Demo</a>)}

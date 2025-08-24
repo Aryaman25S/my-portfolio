@@ -1,26 +1,44 @@
 export const projects = [
   {
-    title: "3D Robotic Portfolio",
-    summary: "This site — Three.js robotic arm with CCD IK, magnetized nav, and smooth UI.",
-    tech: ["React", "Vite", "Tailwind", "Three.js"],
-    links: { demo: "#", github: "#" },
+    period: "Nov 2020 – May 2021",
+    title: "Workout Analysis",
+    summary:
+      "Comparative study of Human Pose Estimation algorithms on lateral-view walking analysis; fine-tuned modern HPE models on a workout dataset.",
+    tech: ["Python", "PyTorch", "HPE"],
   },
   {
-    title: "Pose Estimation Toolkit",
-    summary: "Marker‑less human pose estimation for rehab analytics; liveness & CV pipelines.",
-    tech: ["PyTorch", "OpenCV", "FastAPI"],
-    links: { demo: "#", github: "#" },
+    period: "Aug 2020 – Mar 2021",
+    title: "ROS-based Autonomous Robot & Robotic Arm",
+    summary:
+      "Autonomous navigation with SLAM; PCL-based perception; pick-and-place via 6-DOF arm.",
+    tech: ["ROS", "SLAM", "PCL"],
   },
   {
-    title: "Realtime Chat + GenAI",
-    summary: "Websocket chat with embeddings search and summarization helpers.",
-    tech: ["Node.js", "Postgres", "WebSockets", "Vector Search"],
-    links: { demo: "#", github: "#" },
+    period: "Jul 2020",
+    title: "Text Summarizer & Keyword Extractor",
+    summary:
+      "Unsupervised extractive summarization and keyword extraction using PageRank-style graph ranking.",
+    tech: ["Python", "NLP"],
   },
   {
-    title: "Observability Pipeline",
-    summary: "OpenTelemetry collectors across k8s clusters; dashboards and SLOs.",
-    tech: ["OpenTelemetry", "Kubernetes", "Grafana"],
-    links: { demo: "#", github: "#" },
+    period: "Aug 2019 – Feb 2020",
+    title: "Autonomous Relief Aid Bot",
+    summary:
+      "Used image processing to plan dispatch routes from top-down camera feeds; actuator mechanism prototype.",
+    tech: ["OpenCV", "Robotics"],
+  },
+  {
+    period: "Apr 2019",
+    title: "Waste Deposition & Monitoring System",
+    summary:
+      "IoT-enabled bin with contactless lid and local server; mobile app status monitoring.",
+    tech: ["IoT"],
+  },
+  {
+    period: "Jan 2019",
+    title: "OCR (Optical Character Recognition)",
+    summary:
+      "Explored classic and ML-based OCR pipelines.",
+    tech: ["OpenCV", "ML"],
   },
 ];
