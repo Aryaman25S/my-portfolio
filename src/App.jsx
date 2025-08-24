@@ -7,7 +7,7 @@ import { projects } from "./projectsData.js";
 import ContactForm from "./ContactForm.jsx";
 
 export default function App() {
-  const [mode, setMode] = useState("home");
+  const [mode, setMode] = useState("home"); // 'home' | 'timeline'
   const [activeNav, setActiveNav] = useState("home");
   const [magnetKey, setMagnetKey] = useState(null);
   const timelineRef = useRef(null);
@@ -17,7 +17,7 @@ export default function App() {
 
   const scrollTo = (id) => document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
 
-  // Magnetization hook (unchanged behavior)
+  // ===== Magnetization: keep as-is, only reading effector screen pos from window.robotAPI
   useEffect(() => {
     const lastKeyRef = { current: null };
     const ENTER_R = 28, EXIT_R = 40;
@@ -46,7 +46,7 @@ export default function App() {
     return () => window.removeEventListener("pointerdown", onPointerDown, { capture: true });
   }, [magnetKey]);
 
-  // Scrollspy in timeline
+  // ===== Scrollspy (timeline only)
   useEffect(() => {
     if (mode !== "timeline") return; const container = timelineRef.current; if (!container) return;
     const sections = () => ([
@@ -69,7 +69,7 @@ export default function App() {
     return () => { container.removeEventListener("scroll", onScroll); window.removeEventListener("resize", onScroll); if (raf) cancelAnimationFrame(raf); };
   }, [mode, magnetKey, activeNav, navRefs]);
 
-  // Nav handlers
+  // ===== Nav handlers
   const goHome = () => { setMode("home"); setActiveNav("home"); window.scrollTo({ top: 0, behavior: "smooth" }); };
   const goAbout = () => { setMode("timeline"); setActiveNav("about"); scrollTo("about-section"); };
   const goCareer = () => { setMode("timeline"); setActiveNav("career"); scrollTo("experience-section"); };
@@ -95,32 +95,60 @@ export default function App() {
     );
   };
 
-  const TimelineList = ({ items }) => (
-    <ul className="relative border-l border-white/10 pl-6">
-      {items.map((item, idx) => (
-        <li key={idx} className="relative pb-8" tabIndex={-1}>
-          <span className="absolute -left-[0.375rem] top-2 h-2.5 w-2.5 rounded-full bg-sky-400 ring-4 ring-sky-400/20" aria-hidden="true" />
-          <div className="pl-1">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <h4 className="text-base md:text-lg font-semibold text-white">
-                  {item.role || item.degree} {item.company && <span className="text-slate-300">— {item.company}</span>} {item.school && <span className="text-slate-300">— {item.school}</span>}
-                </h4>
-                {item.location && <div className="text-xs md:text-sm text-slate-400 mt-0.5">{item.location}</div>}
-              </div>
-              <div className="text-xs md:text-sm text-slate-400 whitespace-nowrap">{item.period}</div>
+  // ===== Exact timeline layout (center spine + alternating cards)
+  const EventCard = ({ item, side }) => (
+    <div className={`w-full md:w-1/2 ${side === "left" ? "pr-8" : "pl-8"}`}>
+      <div className="relative">
+        {/* connector to spine */}
+        <span className={`absolute top-6 ${side === "left" ? "right-0 translate-x-full" : "left-0 -translate-x-full"} h-[2px] w-6 bg-white/15`} aria-hidden />
+        {/* dot */}
+        <span className={`absolute top-[1.05rem] ${side === "left" ? "-right-[0.375rem]" : "-left-[0.375rem]"} h-2.5 w-2.5 rounded-full bg-sky-400 ring-4 ring-sky-400/20`} aria-hidden />
+        <div className="backdrop-blur-md bg-white/[0.04] border border-white/10 shadow-xl rounded-2xl p-5">
+          {item.period && (
+            <div className="inline-flex items-center rounded-xl bg-sky-500/10 text-sky-200 ring-1 ring-sky-400/30 px-3 py-1 text-sm font-semibold">
+              {item.period}
             </div>
-            {item.bullets?.length > 0 && (
-              <ul className="mt-2 list-disc pl-5 text-slate-300 text-sm space-y-1">
-                {item.bullets.map((b, i) => (<li key={i}>{b}</li>))}
-              </ul>
-            )}
-          </div>
-        </li>
-      ))}
-    </ul>
+          )}
+          <h4 className="mt-2 text-xl font-semibold text-white">
+            {item.role || item.degree}
+            {item.company && <span className="text-slate-300"> — {item.company}</span>}
+            {item.school && <span className="text-slate-300"> — {item.school}</span>}
+          </h4>
+          {item.location && <div className="text-xs md:text-sm text-slate-400 mt-0.5">{item.location}</div>}
+          {item.bullets?.length > 0 && (
+            <ul className="mt-3 list-disc pl-5 text-slate-300 text-sm space-y-1">
+              {item.bullets.map((b, i) => (<li key={i}>{b}</li>))}
+            </ul>
+          )}
+          {item.desc && !item.bullets && (
+            <p className="mt-2 text-slate-300 text-sm">{item.desc}</p>
+          )}
+        </div>
+      </div>
+    </div>
   );
 
+  const SectionTimeline = ({ id, title, items }) => (
+    <section id={id} className="relative mt-12 scroll-mt-28 md:scroll-mt-32">
+      <h3 className="text-3xl font-bold text-white mb-6">{title}</h3>
+      <div className="relative">
+        {/* center spine */}
+        <div className="absolute left-1/2 -translate-x-1/2 top-0 bottom-0 w-px bg-gradient-to-b from-white/5 via-white/10 to-white/5" aria-hidden />
+        <ul className="space-y-14">
+          {items.map((item, idx) => {
+            const side = idx % 2 === 0 ? "left" : "right"; // alternate sides
+            return (
+              <li key={`${title}-${idx}`} className={`flex ${side === "left" ? "justify-start" : "justify-end"}`}>
+                <EventCard item={item} side={side} />
+              </li>
+            );
+          })}
+        </ul>
+      </div>
+    </section>
+  );
+
+  // ===== Projects grid (unchanged)
   const ProjectCard = ({ p }) => (
     <article className="rounded-2xl border border-white/10 bg-white/[0.05] backdrop-blur p-5 shadow hover:shadow-lg transition">
       <header className="flex items-start justify-between gap-4">
@@ -169,83 +197,91 @@ export default function App() {
     </header>
   );
 
+  const isTimeline = mode === "timeline";
+
   return (
     <div className="relative w-full h-screen overflow-hidden bg-[#0b0f14] text-white font-[Inter,ui-sans-serif,system-ui]">
       <ThreeStage />
       {topNav}
 
       <main id="main" role="main">
-        {mode === "home" && (
-          <div className="relative z-10 flex flex-col items-center pt-24 md:pt-28">
-            <figure className="relative">
-              <img src="/Me2.jpg" alt="Portrait of Aryaman Sharma" width="288" height="288" loading="eager" decoding="async" className="h-32 w-32 md:h-36 md:w-36 rounded-full object-cover ring-2 ring-white/20 shadow-xl" />
-              <span className="pointer-events-none absolute inset-0 rounded-full ring-8 ring-sky-500/10 blur-[2px]" aria-hidden="true" />
-            </figure>
-            <h1 className="mt-5 text-center text-6xl md:text-7xl font-black tracking-tight">Hi, I'm <span className="text-sky-400">Aryaman</span> 👋</h1>
-            <p className="mt-3 max-w-[56ch] text-center text-slate-300 text-lg md:text-xl">Full‑stack engineer with a soft spot for ML + 3D. I build reliable systems and playful interfaces.</p>
-            <div className="mt-6 flex gap-3">
-              <a href="#timeline-top" onClick={(e)=>{e.preventDefault(); setMode("timeline");}} className="rounded-xl bg-sky-600 hover:bg-sky-500 px-5 py-3 font-semibold shadow">View Timeline</a>
-              <a href="#projects-section" onClick={(e)=>{e.preventDefault(); setMode("timeline"); scrollTo("projects-section");}} className="rounded-xl border border-white/20 bg-white/5 px-5 py-3 text-slate-200 hover:border-sky-500/40">Projects</a>
-            </div>
+        {/* HOME - remains mounted; CSS fade/translate */}
+        <section
+          id="home-screen"
+          aria-hidden={isTimeline}
+          className={`relative z-10 flex flex-col items-center pt-24 md:pt-28 transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+            isTimeline ? "opacity-0 -translate-y-4 pointer-events-none" : "opacity-100 translate-y-0"
+          }`}
+        >
+          <figure className="relative">
+            <img src="/Me2.jpg" alt="Portrait of Aryaman Sharma" width="288" height="288" loading="eager" decoding="async" className="h-32 w-32 md:h-36 md:w-36 rounded-full object-cover ring-2 ring-white/20 shadow-xl" />
+            <span className="pointer-events-none absolute inset-0 rounded-full ring-8 ring-sky-500/10 blur-[2px]" aria-hidden="true" />
+          </figure>
+          <h1 className="mt-5 text-center text-6xl md:text-7xl font-black tracking-tight">Hi, I'm <span className="text-sky-400">Aryaman</span> 👋</h1>
+          <p className="mt-3 max-w-[56ch] text-center text-slate-300 text-lg md:text-xl">Full‑stack engineer with a soft spot for ML + 3D. I build reliable systems and playful interfaces.</p>
+          <div className="mt-6 flex gap-3">
+            <a href="#timeline-top" onClick={(e)=>{e.preventDefault(); setMode("timeline");}} className="rounded-xl bg-sky-600 hover:bg-sky-500 px-5 py-3 font-semibold shadow">View Timeline</a>
+            <a href="#projects-section" onClick={(e)=>{e.preventDefault(); setMode("timeline"); scrollTo("projects-section");}} className="rounded-xl border border-white/20 bg-white/5 px-5 py-3 text-slate-200 hover:border-sky-500/40">Projects</a>
           </div>
-        )}
+        </section>
 
-        {mode === "timeline" && (
-          <div ref={timelineRef} id="timeline" className="absolute inset-0 overflow-y-auto z-10">
-            <div className="pointer-events-none sticky top-0 z-0">
-              <div className="h-[40vh] bg-gradient-to-b from-slate-950/60 via-slate-950/85 to-transparent" />
-            </div>
+        {/* TIMELINE - slides from bottom */}
+        <section
+          ref={timelineRef}
+          id="timeline"
+          aria-hidden={!isTimeline}
+          className={`absolute inset-0 overflow-y-auto z-10 transition-[transform,opacity] duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+            isTimeline ? "translate-y-0 opacity-100" : "translate-y-full opacity-0 pointer-events-none"
+          }`}
+        >
+          {/* viewport top gradient cap */}
+          <div className="pointer-events-none sticky top-0 z-0"><div className="h-[40vh] bg-gradient-to-b from-slate-950/60 via-slate-950/85 to-transparent" /></div>
 
-            <div className="relative max-w-5xl mx-auto px-6 py-16" id="timeline-top">
-              <div className="flex items-center justify-between">
-                <h2 className="text-4xl font-bold">Timeline</h2>
-                <div className="flex items-center gap-3">
-                  <button type="button" onClick={() => setMode("home")} className="backdrop-blur bg-white/10 text-white border border-white/15 rounded-2xl px-4 py-2 shadow hover:border-sky-500/40">Back to Home</button>
-                </div>
+          <div className="relative max-w-5xl mx-auto px-6 py-16" id="timeline-top">
+            <div className="flex items-center justify-between">
+              <h2 className="text-4xl font-bold">Timeline</h2>
+              <div className="flex items-center gap-3">
+                <button type="button" onClick={() => setMode("home")} className="backdrop-blur bg-white/10 text-white border border-white/15 rounded-2xl px-4 py-2 shadow hover:border-sky-500/40">Back to Home</button>
               </div>
-
-              <section id="about-section" className="mt-10 backdrop-blur-md bg-white/[0.04] border border-white/10 shadow-xl rounded-2xl p-6 scroll-mt-28 md:scroll-mt-32">
-                <h3 className="text-2xl font-semibold text-white mb-2">About</h3>
-                <p className="text-slate-300">Short bio placeholder. (We'll replace this with your real copy later.)</p>
-              </section>
-
-              <section id="experience-section" className="relative mt-12 scroll-mt-28 md:scroll-mt-32">
-                <h3 className="text-3xl font-bold text-white mb-6">Experience</h3>
-                <div className="backdrop-blur-md bg-white/[0.04] border border-white/10 shadow-xl rounded-2xl p-5">
-                  <TimelineList items={experience} />
-                </div>
-              </section>
-
-              <section id="education-section" className="relative mt-12 scroll-mt-28 md:scroll-mt-32">
-                <h3 className="text-3xl font-bold text-white mb-6">Education</h3>
-                <div className="backdrop-blur-md bg-white/[0.04] border border-white/10 shadow-xl rounded-2xl p-5">
-                  <TimelineList items={education} />
-                </div>
-              </section>
-
-              <section id="projects-section" className="mt-14 scroll-mt-28 md:scroll-mt-32">
-                <h3 className="text-2xl font-semibold text-white mb-4">Selected Projects</h3>
-                <div className="grid gap-4 md:grid-cols-2">
-                  {projects.map((p, i) => (<ProjectCard key={i} p={p} />))}
-                </div>
-              </section>
-
-              <section id="contact-section" className="mt-14 grid gap-6 md:grid-cols-3 bg-white/[0.05] backdrop-blur border border-white/10 rounded-2xl p-6 shadow-xl scroll-mt-28 md:scroll-mt-32">
-                <div className="md:col-span-1 space-y-4">
-                  <h3 className="text-2xl font-semibold text-white">Contact</h3>
-                  <p className="text-slate-300">Prefer email? <a className="text-sky-400 underline" href="mailto:aryaman.25.sharma@gmail.com">aryaman.25.sharma@gmail.com</a></p>
-                  <p className="text-slate-400 text-sm">This form opens your default mail app and pre‑fills the message.</p>
-                </div>
-                <div className="md:col-span-2">
-                  <ContactForm />
-                </div>
-              </section>
-
-              <footer className="mt-16 text-center text-slate-400 text-sm">© {new Date().getFullYear()} Aryaman Sharma — All rights reserved.</footer>
             </div>
-          </div>
-        )}
 
+            {/* About */}
+            <section id="about-section" className="mt-10 backdrop-blur-md bg-white/[0.04] border border-white/10 shadow-xl rounded-2xl p-6 scroll-mt-28 md:scroll-mt-32">
+              <h3 className="text-2xl font-semibold text-white mb-2">About</h3>
+              <p className="text-slate-300">Short bio placeholder. (We'll replace this with your real copy later.)</p>
+            </section>
+
+            {/* Experience timeline */}
+            <SectionTimeline id="experience-section" title="Experience" items={experience} />
+
+            {/* Education timeline */}
+            <SectionTimeline id="education-section" title="Education" items={education} />
+
+            {/* Projects */}
+            <section id="projects-section" className="mt-14 scroll-mt-28 md:scroll-mt-32">
+              <h3 className="text-2xl font-semibold text-white mb-4">Selected Projects</h3>
+              <div className="grid gap-4 md:grid-cols-2">
+                {projects.map((p, i) => (<ProjectCard key={i} p={p} />))}
+              </div>
+            </section>
+
+            {/* Contact */}
+            <section id="contact-section" className="mt-14 grid gap-6 md:grid-cols-3 bg-white/[0.05] backdrop-blur border border-white/10 rounded-2xl p-6 shadow-xl scroll-mt-28 md:scroll-mt-32">
+              <div className="md:col-span-1 space-y-4">
+                <h3 className="text-2xl font-semibold text-white">Contact</h3>
+                <p className="text-slate-300">Prefer email? <a className="text-sky-400 underline" href="mailto:aryaman.25.sharma@gmail.com">aryaman.25.sharma@gmail.com</a></p>
+                <p className="text-slate-400 text-sm">This form opens your default mail app and pre‑fills the message.</p>
+              </div>
+              <div className="md:col-span-2">
+                <ContactForm />
+              </div>
+            </section>
+
+            <footer className="mt-16 text-center text-slate-400 text-sm">© {new Date().getFullYear()} Aryaman Sharma — All rights reserved.</footer>
+          </div>
+        </section>
+
+        {/* Skip links */}
         <a href="#timeline-top" className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-12 bg-zinc-900 text-white px-3 py-2 rounded-md shadow">Skip to Timeline</a>
         <a href="#top-nav" className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-20 bg-zinc-900 text-white px-3 py-2 rounded-md shadow">Skip to Navigation</a>
       </main>
