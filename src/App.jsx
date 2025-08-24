@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import "./index.css";
 import "./App.css";
 import ThreeStage from "./ThreeStage.jsx";
-import { experience, education } from "./timelineData.js"; // <-- NEW
+import { experience, education } from "./timelineData.js";
+import { projects } from "./projectsData.js"; // <-- NEW
 
 export default function App() {
   const [mode, setMode] = useState("home");
@@ -15,7 +16,7 @@ export default function App() {
 
   const scrollTo = (id) => document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
 
-  // --- Magnetization & hooks (unchanged from Commit 8) ---
+  // Magnetization, global click, and scrollspy logic remain the same as Commit 9
   useEffect(() => {
     const lastKeyRef = { current: null };
     const ENTER_R = 28, EXIT_R = 40;
@@ -43,7 +44,6 @@ export default function App() {
     return () => window.removeEventListener("pointerdown", onPointerDown, { capture: true });
   }, [magnetKey]);
 
-  // Scrollspy in timeline
   useEffect(() => {
     if (mode !== "timeline") return; const container = timelineRef.current; if (!container) return;
     const sections = () => ([
@@ -70,7 +70,6 @@ export default function App() {
     return () => { container.removeEventListener("scroll", onScroll); window.removeEventListener("resize", onScroll); if (raf) cancelAnimationFrame(raf); };
   }, [mode, magnetKey, activeNav, navRefs]);
 
-  // Nav handlers
   const goHome = () => { setMode("home"); setActiveNav("home"); window.scrollTo({ top: 0, behavior: "smooth" }); };
   const goAbout = () => { setMode("timeline"); setActiveNav("about"); scrollTo("about-section"); };
   const goCareer = () => { setMode("timeline"); setActiveNav("career"); scrollTo("experience-section"); };
@@ -99,7 +98,6 @@ export default function App() {
     <ul className="relative border-l border-white/10 pl-6">
       {items.map((item, idx) => (
         <li key={idx} className="relative pb-8">
-          {/* dot */}
           <span className="absolute -left-[0.375rem] top-2 h-2.5 w-2.5 rounded-full bg-sky-400 ring-4 ring-sky-400/20" />
           <div className="pl-1">
             <div className="flex items-start justify-between gap-4">
@@ -122,6 +120,30 @@ export default function App() {
         </li>
       ))}
     </ul>
+  );
+
+  const ProjectCard = ({ p }) => (
+    <article className="rounded-2xl border border-white/10 bg-white/[0.05] backdrop-blur p-5 shadow hover:shadow-lg transition">
+      <header className="flex items-start justify-between gap-4">
+        <h4 className="text-lg font-semibold text-white">{p.title}</h4>
+        <div className="flex gap-2 text-sm">
+          {p.links?.demo && (
+            <a href={p.links.demo} className="underline text-sky-400 hover:text-sky-300" target="_blank" rel="noreferrer">Demo</a>
+          )}
+          {p.links?.github && (
+            <a href={p.links.github} className="underline text-sky-400 hover:text-sky-300" target="_blank" rel="noreferrer">GitHub</a>
+          )}
+        </div>
+      </header>
+      <p className="mt-2 text-slate-300 text-sm">{p.summary}</p>
+      {p.tech?.length > 0 && (
+        <div className="mt-3 flex flex-wrap gap-2">
+          {p.tech.map((t, i) => (
+            <span key={i} className="px-2 py-1 rounded-full border border-white/10 bg-white/5 text-xs text-slate-200">{t}</span>
+          ))}
+        </div>
+      )}
+    </article>
   );
 
   const topNav = (
@@ -166,7 +188,7 @@ export default function App() {
             Hi, I'm <span className="text-sky-400">Aryaman</span> 👋
           </h1>
           <p className="mt-3 max-w-[48ch] text-center text-slate-300 text-lg md:text-xl">
-            Move your mouse — the arm will glance at nav items. Scrollspy engages on the Timeline view.
+            Explore some projects below — more details inside each repo.
           </p>
           <div className="mt-6 flex gap-3">
             <a href="#timeline-top" onClick={(e)=>{e.preventDefault(); setMode("timeline");}} className="rounded-xl bg-sky-600 hover:bg-sky-500 px-5 py-3 font-semibold shadow">View Timeline</a>
@@ -211,8 +233,9 @@ export default function App() {
             <section id="projects-section" className="mt-14 scroll-mt-28 md:scroll-mt-32">
               <h3 className="text-2xl font-semibold text-white mb-4">Selected Projects</h3>
               <div className="grid gap-4 md:grid-cols-2">
-                <div className="backdrop-blur-md bg-white/[0.05] border border-white/10 rounded-2xl p-5 shadow">Project A (placeholder)</div>
-                <div className="backdrop-blur-md bg-white/[0.05] border border-white/10 rounded-2xl p-5 shadow">Project B (placeholder)</div>
+                {projects.map((p, i) => (
+                  <ProjectCard key={i} p={p} />
+                ))}
               </div>
             </section>
 
