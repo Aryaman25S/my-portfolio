@@ -22,7 +22,7 @@ export default function ThreeStage() {
 
     // Scene & Camera
     const scene = new THREE.Scene();
-    scene.fog = new THREE.Fog(0x0c1118, 22, 62);
+    scene.fog = new THREE.Fog(0x0a1014, 22, 62);
 
     const camera = new THREE.PerspectiveCamera(45, Math.max(el.clientWidth, 1) / Math.max(el.clientHeight, 1), 0.1, 220);
     camera.position.set(5.2, 3.4, 8.2);
@@ -32,7 +32,7 @@ export default function ThreeStage() {
     const hemi = new THREE.HemisphereLight(0x8aa0b5, 0x0a0f16, 0.7); scene.add(hemi);
     const dir = new THREE.DirectionalLight(0xffffff, 0.9); dir.position.set(-6, 10, 6); dir.castShadow = true; dir.shadow.mapSize.set(1024, 1024);
     dir.shadow.camera.left = -12; dir.shadow.camera.right = 12; dir.shadow.camera.top = 12; dir.shadow.camera.bottom = -12; dir.shadow.camera.near = 0.5; dir.shadow.camera.far = 60; scene.add(dir);
-    const fill = new THREE.PointLight(0x2a8cff, 0.35, 0, 2); fill.position.set(6, 4, -4); scene.add(fill);
+    const fill = new THREE.PointLight(0x22d3ee, 0.32, 0, 2); fill.position.set(6, 4, -4); scene.add(fill);
 
     // Back wall
     const wallGrad = (() => {
@@ -60,7 +60,7 @@ export default function ThreeStage() {
     // Materials
     const metal = new THREE.MeshPhysicalMaterial({ color: 0x9aa3ad, metalness: 0.85, roughness: 0.25, reflectivity: 0.6, clearcoat: 0.6, clearcoatRoughness: 0.2 });
     const darkMetal = new THREE.MeshPhysicalMaterial({ color: 0x6b7280, metalness: 0.9, roughness: 0.35 });
-    const blueAccent = new THREE.MeshStandardMaterial({ color: 0x3aa0ff, emissive: 0x0041ff, emissiveIntensity: 0.35, metalness: 0.7, roughness: 0.3 });
+    const blueAccent = new THREE.MeshStandardMaterial({ color: 0x22d3ee, emissive: 0x006070, emissiveIntensity: 0.35, metalness: 0.7, roughness: 0.3 });
     const addAccentRing = (group, radius = 0.28, thickness = 0.06) => { const ring = new THREE.Mesh(new THREE.TorusGeometry(radius, thickness, 16, 64), blueAccent); ring.rotation.x = Math.PI / 2; ring.castShadow = true; ring.receiveShadow = true; group.add(ring); return ring; };
 
     // Dimensions & workspace
@@ -83,9 +83,10 @@ export default function ThreeStage() {
 
     const effector = new THREE.Group(); effector.position.set(0, L3, 0); j4.add(effector);
     const head = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.18, 0.25, 24), darkMetal); head.rotation.x = Math.PI / 2; head.castShadow = true; head.receiveShadow = true; effector.add(head);
-    const sensorGlow = new THREE.Mesh(new THREE.RingGeometry(0.07, 0.11, 32), new THREE.MeshBasicMaterial({ color: 0x24a3ff, side: THREE.DoubleSide })); sensorGlow.position.z = 0.14; effector.add(sensorGlow);
-    const blueLight = new THREE.PointLight(0x2aa4ff, 1.1, 6, 2.0); blueLight.position.set(0, 0.0, 0.2); effector.add(blueLight);
-    const effectorTip = new THREE.Mesh(new THREE.SphereGeometry(0.06, 20, 16), new THREE.MeshStandardMaterial({ color: 0x7fc4ff, emissive: 0x2fa2ff, emissiveIntensity: 0.9, metalness: 0.4, roughness: 0.2 })); effectorTip.position.z = 0.24; effector.add(effectorTip);
+    const sensorGlow = new THREE.Mesh(new THREE.RingGeometry(0.07, 0.11, 32), new THREE.MeshBasicMaterial({ color: 0x22d3ee, side: THREE.DoubleSide })); sensorGlow.position.z = 0.14; effector.add(sensorGlow);
+    const blueLight = new THREE.PointLight(0x22d3ee, 1.1, 6, 2.0); blueLight.position.set(0, 0.0, 0.2); effector.add(blueLight);
+    const effectorTipMat = new THREE.MeshStandardMaterial({ color: 0x67e8f9, emissive: 0x22d3ee, emissiveIntensity: 0.9, metalness: 0.4, roughness: 0.2 });
+    const effectorTip = new THREE.Mesh(new THREE.SphereGeometry(0.06, 20, 16), effectorTipMat); effectorTip.position.z = 0.24; effector.add(effectorTip);
 
     j0.rotation.x = THREE.MathUtils.degToRad(-8);
 
@@ -116,7 +117,19 @@ export default function ThreeStage() {
 
     const setTargetFromElement = (el) => { if (!el) return; const r = el.getBoundingClientRect(); const cx = r.left + r.width / 2, cy = r.top + r.height / 2; const x = (cx / window.innerWidth) * 2 - 1; const y = -((cy / window.innerHeight) * 2 - 1); setTargetFromNDC(x, y); };
 
-    const onPointerMove = (e) => { const x = (e.clientX / window.innerWidth) * 2 - 1; const y = -((e.clientY / window.innerHeight) * 2 - 1); setTargetFromNDC(x, y); };
+    let focusOverrideEl = null;
+    const setFocusOverride = (el) => { focusOverrideEl = el || null; };
+
+    let pulseUntil = 0;
+    const pulseAttention = () => { pulseUntil = performance.now() + 420; };
+
+    const onPointerMove = (e) => {
+      if (focusOverrideEl) {
+        setTargetFromElement(focusOverrideEl);
+        return;
+      }
+      const x = (e.clientX / window.innerWidth) * 2 - 1; const y = -((e.clientY / window.innerHeight) * 2 - 1); setTargetFromNDC(x, y);
+    };
     window.addEventListener("pointermove", onPointerMove);
 
     // CCD IK
@@ -161,6 +174,11 @@ export default function ThreeStage() {
       if (stop) return; requestAnimationFrame(render);
       const t = clock.getElapsedTime(); if (!prefersReduced) { j0.rotation.y += Math.sin(t * 0.5) * 0.0002; }
       solveIK();
+      const now = performance.now();
+      const pulse = pulseUntil > now ? Math.min(1, (pulseUntil - now) / 420) : 0;
+      const pulseBoost = 1 + pulse * 2.2;
+      effectorTipMat.emissiveIntensity = 0.9 * pulseBoost;
+      blueLight.intensity = 1.1 + pulse * 2.4;
       try {
         const eff = projectScreen(getWorldPos(effector)); const baseScreen = projectScreen(getWorldPos(j0));
         if (window.robotAPI?.onEffectorScreenPos) window.robotAPI.onEffectorScreenPos(eff);
@@ -174,12 +192,31 @@ export default function ThreeStage() {
     const projectScreen = (v) => { const p = v.clone().project(camera); const x = (p.x + 1) * 0.5 * el.clientWidth; const y = (1 - p.y) * 0.5 * el.clientHeight; return { x, y }; };
 
     // Expose hooks
-    window.robotAPI = { setTargetFromElement, onEffectorScreenPos: null, onBaseScreenPos: null };
+    window.robotAPI = {
+      setTargetFromElement,
+      setFocusOverride,
+      pulseAttention,
+      onEffectorScreenPos: null,
+      onBaseScreenPos: null,
+    };
 
     render();
 
     // Cleanup
-    return () => { stop = true; window.removeEventListener("resize", onResize); window.removeEventListener("pointermove", onPointerMove); renderer.dispose(); el.innerHTML = ""; if (window.robotAPI) { window.robotAPI.onEffectorScreenPos = null; window.robotAPI.onBaseScreenPos = null; } };
+    return () => {
+      stop = true;
+      window.removeEventListener("resize", onResize);
+      window.removeEventListener("pointermove", onPointerMove);
+      renderer.dispose();
+      el.innerHTML = "";
+      focusOverrideEl = null;
+      if (window.robotAPI) {
+        window.robotAPI.onEffectorScreenPos = null;
+        window.robotAPI.onBaseScreenPos = null;
+        window.robotAPI.setFocusOverride = null;
+        window.robotAPI.pulseAttention = null;
+      }
+    };
   }, []);
 
   return <div ref={ref} className="absolute inset-0 z-0 pointer-events-none" aria-hidden="true" />;

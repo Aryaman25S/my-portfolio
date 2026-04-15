@@ -68,7 +68,7 @@ export default function ContactForm() {
             value={name}
             onChange={(e) => setName(e.target.value)}
             onBlur={() => setTouched((t) => ({ ...t, name: true }))}
-            className="mt-1 w-full rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500/60"
+            className="mt-1 w-full rounded-lg border border-lab-line bg-white/[0.04] px-3 py-2 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/50"
             placeholder="Ada Lovelace"
             autoComplete="name"
             required
@@ -86,7 +86,7 @@ export default function ContactForm() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             onBlur={() => setTouched((t) => ({ ...t, email: true }))}
-            className="mt-1 w-full rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500/60"
+            className="mt-1 w-full rounded-lg border border-lab-line bg-white/[0.04] px-3 py-2 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/50"
             placeholder="you@example.com"
             autoComplete="email"
             required
@@ -106,7 +106,7 @@ export default function ContactForm() {
           value={message}
           onChange={(e) => setMessage(e.target.value)}
           onBlur={() => setTouched((t) => ({ ...t, message: true }))}
-          className="mt-1 w-full rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500/60"
+          className="mt-1 w-full rounded-lg border border-lab-line bg-white/[0.04] px-3 py-2 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/50"
           placeholder="A short note about what you'd like to build together…"
           required
         />
@@ -121,23 +121,22 @@ export default function ContactForm() {
           disabled={hasErrors}
           className={`rounded-xl px-5 py-2.5 font-semibold shadow border ${
             hasErrors
-              ? "bg-sky-600/50 text-white/80 border-white/10 cursor-not-allowed"
-              : "bg-sky-600 hover:bg-sky-500 text-white border-white/10"
+              ? "bg-cyan-800/40 text-white/70 border-lab-line cursor-not-allowed"
+              : "bg-cyan-600 hover:bg-cyan-500 text-white border-cyan-500/30"
           }`}
         >
           Send via Email
         </button>
         <a
           href={mailtoHref}
-          className="rounded-xl px-5 py-2.5 font-semibold shadow border border-white/10 bg-white/5 text-slate-200 hover:border-sky-500/40"
+          className="rounded-xl px-5 py-2.5 font-semibold shadow border border-lab-line bg-white/[0.05] text-slate-200 hover:border-cyan-500/40"
         >
           Open Mail App
         </a>
-        {/* REPLACED copy buttons with Clear */}
         <button
           type="button"
           onClick={clearMessage}
-          className="rounded-xl px-4 py-2.5 border border-white/10 bg-white/5 text-slate-200 hover:border-sky-500/40"
+          className="rounded-xl px-4 py-2.5 border border-lab-line bg-white/[0.05] text-slate-200 hover:border-cyan-500/40"
         >
           Clear
         </button>

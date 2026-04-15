@@ -6,7 +6,27 @@ export const projects = [
       "Single-page portfolio with a Three.js robotic arm (CCD IK), timeline, and contact flow. Built with React and Vite.",
     tech: ["React", "Vite", "Three.js", "Tailwind CSS"],
     links: {
-      github: "https://github.com/aryaman-sharma/my-portfolio",
+      github: "https://github.com/Aryaman25S/my-portfolio",
+    },
+  },
+  {
+    period: "2025",
+    title: "Chronos Exchange",
+    summary:
+      "Play-money event trading simulator: Rust matching engine (price–time, STP, IOC/FOK/GTC), WAL-backed state, Axum gateway with REST/WebSocket, and a React UI with depth ladder, tape, and order flow.",
+    tech: ["Rust", "Axum", "React", "WebSocket", "Vite"],
+    links: {
+      demo: "https://chronos-exchange.fly.dev/",
+    },
+  },
+  {
+    period: "2026",
+    title: "Leitmotif",
+    summary:
+      "Film scoring intent: directors tag emotional atmosphere with a controlled vocabulary, hear AI-generated mock cues from that intent, and share structured composer briefs so direction becomes executable.",
+    tech: ["Next.js", "TypeScript", "Prisma", "PostgreSQL", "Tailwind CSS"],
+    links: {
+      demo: "https://www.theleitmotif.com/",
     },
   },
   {
