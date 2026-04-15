@@ -1,5 +1,15 @@
 export const projects = [
   {
+    period: "2025",
+    title: "Personal portfolio (this site)",
+    summary:
+      "Single-page portfolio with a Three.js robotic arm (CCD IK), timeline, and contact flow. Built with React and Vite.",
+    tech: ["React", "Vite", "Three.js", "Tailwind CSS"],
+    links: {
+      github: "https://github.com/aryaman-sharma/my-portfolio",
+    },
+  },
+  {
     period: "Nov 2020 – May 2021",
     title: "Workout Analysis",
     summary:

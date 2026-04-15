@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from "react";
-import "./index.css";
 import "./App.css";
 import ThreeStage from "./ThreeStage.jsx";
 import { experience, education } from "./timelineData.js";
@@ -12,9 +11,13 @@ export default function App() {
   const [mode, setMode] = useState("home"); // 'home' | 'timeline'
   const [activeNav, setActiveNav] = useState("home");
   const timelineRef = useRef(null);
+  const mobileMenuRef = useRef(null);
 
-  // Simple list for mobile menu mapping
   const navKeys = ["home", "about", "career", "education", "projects", "contact"];
+
+  const closeMobileMenu = () => {
+    mobileMenuRef.current?.removeAttribute("open");
+  };
 
   const scrollTo = (id) => document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
 
@@ -35,12 +38,28 @@ export default function App() {
       const list = sections(); const crect = container.getBoundingClientRect(); const pivot = crect.top + crect.height * 0.35;
       let bestKey = null, bestDist = Infinity;
       for (const [key, el] of list) { if (!el) continue; const r = el.getBoundingClientRect(); const d = Math.abs(r.top - pivot); if (d < bestDist) { bestDist = d; bestKey = key; } }
-      if (bestKey && bestKey !== activeNav) setActiveNav(bestKey);
+      if (bestKey) setActiveNav((prev) => (bestKey !== prev ? bestKey : prev));
     };
     const onScroll = () => { if (raf) cancelAnimationFrame(raf); raf = requestAnimationFrame(pickActive); };
     container.addEventListener("scroll", onScroll, { passive: true }); window.addEventListener("resize", onScroll);
     pickActive();
     return () => { container.removeEventListener("scroll", onScroll); window.removeEventListener("resize", onScroll); if (raf) cancelAnimationFrame(raf); };
+  }, [mode]);
+
+  // Point the 3D arm at the active timeline section (ThreeStage exposes window.robotAPI).
+  useEffect(() => {
+    if (mode !== "timeline") return;
+    const idMap = {
+      about: "about-section",
+      career: "experience-section",
+      education: "education-section",
+      projects: "projects-section",
+      contact: "contact-section",
+    };
+    const sectionId = idMap[activeNav];
+    const el = sectionId ? document.getElementById(sectionId) : null;
+    const api = typeof window !== "undefined" ? window.robotAPI : null;
+    if (api?.setTargetFromElement && el) api.setTargetFromElement(el);
   }, [mode, activeNav]);
 
   // =====================
@@ -55,14 +74,18 @@ export default function App() {
   const navHandlers = { home: goHome, about: goAbout, career: goCareer, education: goEducation, projects: goProjects, contact: goContact };
 
   // =====================
-  // Nav UI (no magnetization, no robot hooks)
+  // Nav UI (simple)
   // =====================
   const NavButton = ({ k, label }) => {
     const isActive = activeNav === k || (k === "home" && mode === "home");
     return (
       <button
         type="button"
-        onClick={(e) => { e.preventDefault(); navHandlers[k]?.(); }}
+        onClick={(e) => {
+          e.preventDefault();
+          navHandlers[k]?.();
+          closeMobileMenu();
+        }}
         className={`px-3 py-2 rounded-full text-sm md:text-base transition focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/70 ${isActive ? "text-sky-400 ring-2 ring-sky-500/60" : "text-slate-300 hover:text-white hover:ring-2 hover:ring-sky-500/40"}`}
         aria-current={isActive ? "page" : undefined}
       >
@@ -72,7 +95,7 @@ export default function App() {
   };
 
   // =====================
-  // Timeline UI (center spine + alternating cards)
+  // Timeline components
   // =====================
   const EventCard = ({ item, side }) => (
     <div className={`w-full md:w-1/2 ${side === "left" ? "md:pr-8" : "md:pl-8"}`}>
@@ -104,18 +127,8 @@ export default function App() {
 
   const EventConnector = ({ side }) => (
     <>
-      {/* dot centered on the spine */}
-      <span
-        className="hidden md:block absolute left-1/2 -translate-x-1/2 top-8 h-2.5 w-2.5 rounded-full bg-sky-400 ring-4 ring-sky-400/20"
-        aria-hidden
-      />
-      {/* connector aligned to the dot's center (2rem + 4px => 36px) */}
-      <span
-        className={`hidden md:block absolute top-[calc(2rem+4px)] h-[2px] w-8 bg-white/15 ${
-          side === "left" ? "right-1/2" : "left-1/2"
-        }`}
-        aria-hidden
-      />
+      <span className="hidden md:block absolute left-1/2 -translate-x-1/2 top-8 h-2.5 w-2.5 rounded-full bg-sky-400 ring-4 ring-sky-400/20" aria-hidden />
+      <span className={`hidden md:block absolute top-[calc(2rem+4px)] h-[2px] w-8 bg-white/15 ${side === "left" ? "right-1/2" : "left-1/2"}`} aria-hidden />
     </>
   );
 
@@ -123,11 +136,10 @@ export default function App() {
     <section id={id} className="relative mt-12 scroll-mt-28 md:scroll-mt-32">
       <h3 className="text-3xl font-bold text-white mb-6">{title}</h3>
       <div className="relative">
-        {/* center spine */}
         <div className="hidden md:block absolute left-1/2 -translate-x-1/2 top-0 bottom-0 w-px bg-gradient-to-b from-white/5 via-white/10 to-white/5" aria-hidden />
         <ul className="space-y-14">
           {items.map((item, idx) => {
-            const side = idx % 2 === 0 ? "left" : "right"; // alternate sides
+            const side = idx % 2 === 0 ? "left" : "right";
             return (
               <li key={`${title}-${idx}`} className={`relative flex ${side === "left" ? "justify-start" : "justify-end"}`}>
                 <EventConnector side={side} />
@@ -143,9 +155,7 @@ export default function App() {
   const ProjectCard = ({ p }) => (
     <article className="rounded-2xl border border-white/10 bg-white/[0.05] backdrop-blur p-5 shadow hover:shadow-lg transition">
       {p.period && (
-        <div className="inline-flex items-center rounded-xl bg-sky-500/10 text-sky-200 ring-1 ring-sky-400/30 px-3 py-1 text-sm font-semibold">
-          {p.period}
-        </div>
+        <div className="inline-flex items-center rounded-xl bg-sky-500/10 text-sky-200 ring-1 ring-sky-400/30 px-3 py-1 text-sm font-semibold">{p.period}</div>
       )}
       <header className="mt-2 flex items-start justify-between gap-4">
         <h4 className="text-lg font-semibold text-white">{p.title}</h4>
@@ -163,6 +173,8 @@ export default function App() {
     </article>
   );
 
+  const isTimeline = mode === "timeline";
+
   const topNav = (
     <header id="top-nav" aria-label="Primary" className="fixed left-1/2 -translate-x-1/2 top-3 z-50 pointer-events-auto">
       <nav aria-label="Primary Navigation">
@@ -175,13 +187,11 @@ export default function App() {
           <NavButton k="contact" label="Contact" />
         </div>
         <div className="md:hidden flex items-center gap-2">
-          <details className="[&_summary::-webkit-details-marker]:hidden">
+          <details ref={mobileMenuRef} className="[&_summary::-webkit-details-marker]:hidden">
             <summary aria-label="Open navigation menu" className="rounded-lg border border-white/20 bg-zinc-900/70 text-white px-3 py-2 cursor-pointer select-none">☰</summary>
             <div className="absolute left-1/2 -translate-x-1/2 mt-2 w-[92vw] max-w-sm rounded-2xl border border-white/10 bg-zinc-900/90 backdrop-blur p-3 shadow-xl">
               <div className="flex flex-col gap-2">
-                {navKeys.map((k) => (
-                  <NavButton key={k} k={k} label={k[0].toUpperCase() + k.slice(1)} />
-                ))}
+                {navKeys.map((k) => (<NavButton key={k} k={k} label={k[0].toUpperCase() + k.slice(1)} />))}
               </div>
             </div>
           </details>
@@ -190,31 +200,47 @@ export default function App() {
     </header>
   );
 
-  const isTimeline = mode === "timeline";
-
   return (
     <div className="relative w-full h-screen overflow-hidden bg-[#0b0f14] text-white font-[Inter,ui-sans-serif,system-ui]">
       <ThreeStage />
       {topNav}
 
       <main id="main" role="main">
-        {/* HOME - remains mounted; CSS fade/translate */}
+        {/* HOME (min-height viewport; bottom overlay) */}
         <section
           id="home-screen"
           aria-hidden={isTimeline}
-          className={`relative z-10 flex flex-col items-center pt-24 md:pt-28 transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+          className={`relative z-10 flex flex-col items-center min-h-[100dvh] pt-20 md:pt-24 pb-24 md:pb-28 transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${
             isTimeline ? "opacity-0 -translate-y-4 pointer-events-none" : "opacity-100 translate-y-0"
           }`}
         >
           <figure className="relative">
-            <img src="/Me2.jpg" alt="Portrait of Aryaman Sharma" width="288" height="288" loading="eager" decoding="async" className="h-32 w-32 md:h-36 md:w-36 rounded-full object-cover ring-2 ring-white/20 shadow-xl" />
+            <img src="/Me2.jpg" alt="Portrait of Aryaman Sharma" width="288" height="288" loading="eager" decoding="async" className="h-28 w-28 md:h-32 md:w-32 rounded-full object-cover ring-2 ring-white/20 shadow-xl" />
             <span className="pointer-events-none absolute inset-0 rounded-full ring-8 ring-sky-500/10 blur-[2px]" aria-hidden="true" />
           </figure>
-          <h1 className="mt-5 text-center text-6xl md:text-7xl font-black tracking-tight">Hi, I'm <span className="text-sky-400">Aryaman</span> 👋</h1>
-          <p className="mt-3 max-w-[56ch] text-center text-slate-300 text-lg md:text-xl">Welcome to my portfolio! Best experienced on desktop for the full interactive robot.</p>
+          <h1 className="mt-4 text-center text-6xl md:text-7xl font-black tracking-tight">Hi, I'm <span className="text-sky-400">Aryaman</span></h1>
+
+          {/* Bottom overlay: typing titles + welcome note below the robot base */}
+          <div className="pointer-events-none absolute inset-x-0 bottom-6 md:bottom-10">
+            <div className="pointer-events-auto max-w-3xl mx-auto px-4 text-center">
+              <p className="text-2xl md:text-3xl font-extrabold leading-tight text-sky-300">
+                I'm a{" "}
+                <TypingTitles
+                  words={["Software Developer", "Machine Learning Engineer", "Data Scientist"]}
+                  typingSpeed={80}
+                  deletingSpeed={40}
+                  pauseMs={900}
+                  className="inline-block align-baseline"
+                />
+              </p>
+              <p className="mt-2 text-slate-300 text-sm md:text-base">
+                Welcome to my portfolio! Best experienced on desktop for the full interactive robot.
+              </p>
+            </div>
+          </div>
         </section>
 
-        {/* TIMELINE - slides from bottom */}
+        {/* TIMELINE */}
         <section
           ref={timelineRef}
           id="timeline"
@@ -223,7 +249,6 @@ export default function App() {
             isTimeline ? "translate-y-0 opacity-100" : "translate-y-full opacity-0 pointer-events-none"
           }`}
         >
-          {/* viewport top gradient cap */}
           <div className="pointer-events-none sticky top-0 z-0"><div className="h-[40vh] bg-gradient-to-b from-slate-950/60 via-slate-950/85 to-transparent" /></div>
 
           <div className="relative max-w-5xl mx-auto px-6 py-16" id="timeline-top">
@@ -243,10 +268,10 @@ export default function App() {
               </div>
             </section>
 
-            {/* Experience timeline */}
+            {/* Experience */}
             <SectionTimeline id="experience-section" title="Experience" items={experience} />
 
-            {/* Education timeline */}
+            {/* Education */}
             <SectionTimeline id="education-section" title="Education" items={education} />
 
             {/* Projects */}
@@ -261,10 +286,7 @@ export default function App() {
             <section id="contact-section" className="mt-14 grid gap-6 md:grid-cols-3 bg-white/[0.05] backdrop-blur border border-white/10 rounded-2xl p-6 shadow-xl scroll-mt-28 md:scroll-mt-32">
               <div className="md:col-span-1 space-y-5">
                 <h3 className="text-2xl font-semibold text-white">Contact</h3>
-                <p className="text-slate-300">
-                  Prefer email? Reach me at {" "}
-                  <a className="text-sky-400 underline" href="mailto:aryaman.25.sharma@gmail.com">aryaman.25.sharma@gmail.com</a>.
-                </p>
+                <p className="text-slate-300">Prefer email? Reach me at <a className="text-sky-400 underline" href="mailto:aryaman.25.sharma@gmail.com">aryaman.25.sharma@gmail.com</a>.</p>
                 <div>
                   <div className="text-xs font-semibold tracking-wider text-slate-400">PHONE</div>
                   <a href="tel:+16464185476" className="text-sky-400 hover:text-sky-300">+1 (646) 418-5476</a>
@@ -275,9 +297,7 @@ export default function App() {
                 </div>
                 <p className="text-slate-400 text-sm">This form opens your default mail app and pre‑fills the message.</p>
               </div>
-              <div className="md:col-span-2">
-                <ContactForm />
-              </div>
+              <div className="md:col-span-2"><ContactForm /></div>
             </section>
 
             <footer className="mt-16 text-center text-slate-400 text-sm">© {new Date().getFullYear()} Aryaman Sharma — All rights reserved.</footer>

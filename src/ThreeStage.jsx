@@ -165,7 +165,9 @@ export default function ThreeStage() {
         const eff = projectScreen(getWorldPos(effector)); const baseScreen = projectScreen(getWorldPos(j0));
         if (window.robotAPI?.onEffectorScreenPos) window.robotAPI.onEffectorScreenPos(eff);
         if (window.robotAPI?.onBaseScreenPos) window.robotAPI.onBaseScreenPos(baseScreen);
-      } catch {}
+      } catch {
+        /* ignore projection edge cases */
+      }
       renderer.render(scene, camera);
     };
 

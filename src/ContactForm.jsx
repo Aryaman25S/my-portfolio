@@ -30,10 +30,7 @@ export default function ContactForm() {
       message || "(no message)",
       "",
       `— Sent from portfolio (${new Date().toLocaleString()})`,
-      typeof navigator !== "undefined" ? `UA: ${navigator.userAgent}` : "",
-    ]
-      .filter(Boolean)
-      .join("\n");
+    ].join("\n");
     return `mailto:${EMAIL_TO}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
   }, [name, email, message]);
 
