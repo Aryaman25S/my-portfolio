@@ -111,16 +111,17 @@ export default function App() {
       const list = sections();
       const crect = container.getBoundingClientRect();
       const pivot = crect.top + crect.height * 0.35;
+      /** Last section (in order) whose top is at/above the pivot — avoids picking the next section
+       *  when its heading nears the pivot while the long previous section still fills the view. */
       let bestKey = null;
-      let bestDist = Infinity;
       for (const [key, el] of list) {
         if (!el) continue;
         const r = el.getBoundingClientRect();
-        const d = Math.abs(r.top - pivot);
-        if (d < bestDist) {
-          bestDist = d;
-          bestKey = key;
-        }
+        if (r.top <= pivot) bestKey = key;
+      }
+      if (!bestKey) {
+        const first = list.find(([, el]) => el);
+        if (first) bestKey = first[0];
       }
       if (bestKey) setActiveNav((prev) => (bestKey !== prev ? bestKey : prev));
     };
